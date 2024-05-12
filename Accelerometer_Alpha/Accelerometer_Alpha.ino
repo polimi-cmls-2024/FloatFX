@@ -5,6 +5,10 @@ https://docs.arduino.cc/resources/datasheets/ABX00023-datasheet.pdf
 MMA7361     basic output = 1.65 V + (0.80 V/g)
 https://www.nxp.com/docs/en/data-sheet/MMA7361L.pdf
 
+X --> Short side
+Y --> Long side
+Z --> Up face
+
 zeroG_ADCValue  = 1.65V --> 1.65/5 * 4095 = 1352
 oneG_ADCValue   = 2.45V --> 2.45/5 * 4095 = 2007
 /*************************************************************/
@@ -20,6 +24,19 @@ oneG_ADCValue   = 2.45V --> 2.45/5 * 4095 = 2007
 #define WINDOW_SAMPLES 100
 #define SETTLE_TIME 3000  //Time in ms for the calibration
 
+#define X_UP 0x10    //--> 2.45V
+#define X_DOWN 0x11  //--> 0.85V
+//#define X_STLL  0x12
+#define Y_UP 0x20
+#define Y_DOWN 0x21
+//#define Y_STILL 0x22
+#define Z_UP 0x30
+#define Z_DOWN 0x31
+//#define Z_STILL 0x32
+
+#define X_THRES 200
+#define Y_THRES 200
+#define Z_THRES 200
 
 
 // Accelerometer values at rest from datasheet, to be overwritten by the calibration routine
@@ -29,18 +46,71 @@ uint16_t zRest = 2007;
 
 const uint8_t PINS[3] = { X_PIN, Y_PIN, Z_PIN };
 uint16_t axisVett[3];
-int8_t rotVett[3];
+
+uint16_t old_state, new_state;
 
 void setup() {
-  // put your setup code here, to run once:
+  Serial.begin(250000);
 }
 
 void loop() {
 
   readAxis(WINDOW_SAMPLES);
 
-  //detectRotation();
-  
+  detectRotation();
+
+  sendMessage();
+}
+
+
+void sendMessage() {
+  if (old_state == Z_UP) {          // only act upon movements from the calibration position
+
+
+    if (new_state == X_UP) {
+      Serial.print("G+");
+    } else if (new_state == X_DOWN) {
+      Serial.print("G-");
+    } else if (new_state == Y_UP) {
+      Serial.print("B+");
+    } else if (new_state == Y_DOWN) {
+      Serial.print("B-");
+    }
+
+
+  }
+}
+
+
+void detectRotation() {
+
+  int deltaX, deltaY, deltaZ;
+
+  deltaX = axisVett[0] - xRest;
+  deltaY = axisVett[1] - yRest;
+  deltaZ = axisVett[2] - zRest;
+
+  new_state = STILL;
+
+  if (abs(deltaX) > abs(deltaY)) {  // distinguish X & Y rotations
+    if (abs(deltaX) > X_THRES) {    // verify threshold is respected
+      if (deltaX > 0) {
+        new_state = X_UP;
+      } else {
+        new_state = X_DOWN;
+      }
+    }
+  } else if (abs(deltaY) > abs(deltaX)) {
+    if (abs(deltaY) > Y_THRES) {
+      if (deltaY > 0) {
+        new_state = Y_UP;
+      } else {
+        new_state = Y_DOWN;
+      }
+    }
+  } else if ((axisVett[2] > axisVett[0]) && (axisVett[2] > axisVett[1])) {
+    new_state = Z_UP;
+  }
 }
 
 
@@ -67,7 +137,7 @@ void readAxis(uint16_t samples) {
 
 void calibrateAccelerometer() {
 
-  //Serial OSC to tell the user to keep the glove horizontal
+  //Serial to tell the user to keep the glove horizontal
   //countdown instead of one delay maybe(?)
   // Time for the user to settle
   delay(3000);
@@ -85,7 +155,7 @@ void calibrateAccelerometer() {
     rotVett[i] = 0;
   }
 
-  //Serial OSC to notify of the completed calibration
+  //Serial to notify of the completed calibration
 
   return;
 }
@@ -94,6 +164,6 @@ float LPF(float old_avg, float new_val, uint samples) {
 
   // weighted average of #samples for the given avg and new value
 
-  float new_avg = (old_avg * (samples - 1) + new_val) / samples;
+  float new_avg = (old_avg * ((float)samples - 1) + new_val) / (float)samples;
   return new_avg;
 }
