@@ -54,9 +54,14 @@ public:
     void setStateInformation (const void* data, int sizeInBytes) override;
 
     juce::AudioProcessorValueTreeState::ParameterLayout createParameters();
-    juce::AudioProcessorValueTreeState apvts{ *this, nullptr, "Parameters", createParameters()};
+    juce::AudioProcessorValueTreeState apvts{ *this, nullptr, "Parameters", createParameters() };
+
 
 private:
+
+    juce::dsp::ProcessorDuplicator <juce::dsp::IIR::Filter<float>, juce::dsp::IIR::Coefficients <float>> lowPassFilter;
+    float lastSampleRate;
+
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FloatEQAudioProcessor)
 };

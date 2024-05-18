@@ -19,7 +19,12 @@ FloatEQAudioProcessor::FloatEQAudioProcessor()
                       #endif
                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
                      #endif
-                       )
+                       ),
+                       // 10
+                       lowPassFilter(juce::dsp::IIR::Coefficients<float>::makeLowPass(44100, 20000.0f, 0.1))
+
+                       
+                       
 #endif
 {
 }
@@ -95,6 +100,17 @@ void FloatEQAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBloc
 {
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
+
+    lastSampleRate = sampleRate;
+    juce::dsp::ProcessSpec spec;
+
+    spec.sampleRate = sampleRate;
+    spec.maximumBlockSize = samplesPerBlock;
+    spec.numChannels = getTotalNumOutputChannels();
+
+    lowPassFilter.prepare(spec);
+    lowPassFilter.reset();
+
 }
 
 void FloatEQAudioProcessor::releaseResources()
@@ -144,18 +160,12 @@ void FloatEQAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
-    // This is the place where you'd normally do the guts of your plugin's
-    // audio processing...
-    // Make sure to reset the state if your inner loop is processing
-    // the samples and the outer loop is handling the channels.
-    // Alternatively, you can process the samples with the channels
-    // interleaved by keeping the same state.
-    for (int channel = 0; channel < totalNumInputChannels; ++channel)
-    {
-        auto* channelData = buffer.getWritePointer (channel);
-
-        // ..do something to the data...
-    }
+    juce::dsp::AudioBlock <float> block (buffer);
+    float freq = *apvts.getRawParameterValue("FREQ");
+    float quality = *apvts.getRawParameterValue("Q");
+    *lowPassFilter.state = *juce::dsp::IIR::Coefficients<float>::makeLowPass(lastSampleRate, freq, 
+    quality);
+    lowPassFilter.process(juce::dsp::ProcessContextReplacing<float> (block));
 }
 
 //==============================================================================
@@ -166,8 +176,8 @@ bool FloatEQAudioProcessor::hasEditor() const
 
 juce::AudioProcessorEditor* FloatEQAudioProcessor::createEditor()
 {
-    //return new FloatEQAudioProcessorEditor (*this);
-    return new juce::GenericAudioProcessorEditor(*this);
+    return new FloatEQAudioProcessorEditor (*this);
+    //return new juce::GenericAudioProcessorEditor(*this);
 }
 
 //==============================================================================
