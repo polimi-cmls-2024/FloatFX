@@ -10,7 +10,7 @@
 #include "PluginEditor.h"
 
 //==============================================================================
-FloatEQAudioProcessor::FloatEQAudioProcessor()
+EQAudioProcessor::EQAudioProcessor()
 #ifndef JucePlugin_PreferredChannelConfigurations
      : AudioProcessor (BusesProperties()
                      #if ! JucePlugin_IsMidiEffect
@@ -20,26 +20,50 @@ FloatEQAudioProcessor::FloatEQAudioProcessor()
                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
                      #endif
                        ),
-                       // 10
-                       lowPassFilter(juce::dsp::IIR::Coefficients<float>::makeLowPass(44100, 20000.0f, 0.1))
-
-                       
-                       
+                       equalizer_apvts(*this, nullptr), distortion_apvts(*this, nullptr)
 #endif
 {
+    //Equalizer parameters
+    equalizer_apvts.createAndAddParameter(std::make_unique<juce::AudioParameterFloat>("EQcutoff",
+        "EQ Cutoff", juce::NormalisableRange<float>(20.0f, 20000.0f, 1.0f), 500.0f));
+    equalizer_apvts.createAndAddParameter(std::make_unique<juce::AudioParameterFloat>("Q",
+        "Q", juce::NormalisableRange<float>(0.01f, 10.0f, 0.01f), 5.0f));
+    equalizer_apvts.createAndAddParameter(std::make_unique<juce::AudioParameterFloat>("gain",
+        "Gain", juce::NormalisableRange<float>(-24.0f, 24.0f, 1.0f), 0.0f, "dB"));
+    equalizer_apvts.createAndAddParameter(std::make_unique<juce::AudioParameterChoice>("type",
+        "Filter Type", filterTypes, 0));
+
+    equalizer_apvts.state = juce::ValueTree("savedParams");
+
+    //Distortion parameters
+    distortion_apvts.createAndAddParameter(std::make_unique<juce::AudioParameterFloat>("drive",
+        "Drive", juce::NormalisableRange<float>(0.0f, 100.0f, 1.0f), 0.0f));
+    distortion_apvts.createAndAddParameter(std::make_unique<juce::AudioParameterFloat>("volume",
+        "Volume", juce::NormalisableRange<float>(-20.0f, 20.0f, 0.5f), 0.0f, "dB"));
+    distortion_apvts.createAndAddParameter(std::make_unique<juce::AudioParameterFloat>("distortion_mix",
+        "Mix", juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f), 1.0f, "%"));
+    distortion_apvts.createAndAddParameter(std::make_unique<juce::AudioParameterFloat>("anger",
+        "Anger", juce::NormalisableRange<float>(0.0f, 1.0f, 0.1f), 0.5f));
+    distortion_apvts.createAndAddParameter(std::make_unique<juce::AudioParameterFloat>("hpf",
+        "HPF Frequency", juce::NormalisableRange<float>(20.0f, 10000.0f, 1.0f, 0.25f), 20.0f, "Hz"));
+    distortion_apvts.createAndAddParameter(std::make_unique<juce::AudioParameterFloat>("lpf",
+        "LPF Frequency", juce::NormalisableRange<float>(200.0f, 20000.0f, 1.0f, 0.25f), 20000.0f, "Hz"));
+    distortion_apvts.createAndAddParameter(std::make_unique<juce::AudioParameterChoice>("distortion_type",
+        "Distortion Type", distortionTypes, 0));
+    distortion_apvts.state = juce::ValueTree("savedParams");
 }
 
-FloatEQAudioProcessor::~FloatEQAudioProcessor()
+EQAudioProcessor::~EQAudioProcessor()
 {
 }
 
 //==============================================================================
-const juce::String FloatEQAudioProcessor::getName() const
+const juce::String EQAudioProcessor::getName() const
 {
     return JucePlugin_Name;
 }
 
-bool FloatEQAudioProcessor::acceptsMidi() const
+bool EQAudioProcessor::acceptsMidi() const
 {
    #if JucePlugin_WantsMidiInput
     return true;
@@ -48,7 +72,7 @@ bool FloatEQAudioProcessor::acceptsMidi() const
    #endif
 }
 
-bool FloatEQAudioProcessor::producesMidi() const
+bool EQAudioProcessor::producesMidi() const
 {
    #if JucePlugin_ProducesMidiOutput
     return true;
@@ -57,7 +81,7 @@ bool FloatEQAudioProcessor::producesMidi() const
    #endif
 }
 
-bool FloatEQAudioProcessor::isMidiEffect() const
+bool EQAudioProcessor::isMidiEffect() const
 {
    #if JucePlugin_IsMidiEffect
     return true;
@@ -66,61 +90,56 @@ bool FloatEQAudioProcessor::isMidiEffect() const
    #endif
 }
 
-double FloatEQAudioProcessor::getTailLengthSeconds() const
+double EQAudioProcessor::getTailLengthSeconds() const
 {
     return 0.0;
 }
 
-int FloatEQAudioProcessor::getNumPrograms()
+int EQAudioProcessor::getNumPrograms()
 {
     return 1;   // NB: some hosts don't cope very well if you tell them there are 0 programs,
                 // so this should be at least 1, even if you're not really implementing programs.
 }
 
-int FloatEQAudioProcessor::getCurrentProgram()
+int EQAudioProcessor::getCurrentProgram()
 {
     return 0;
 }
 
-void FloatEQAudioProcessor::setCurrentProgram (int index)
+void EQAudioProcessor::setCurrentProgram (int index)
 {
 }
 
-const juce::String FloatEQAudioProcessor::getProgramName (int index)
+const juce::String EQAudioProcessor::getProgramName (int index)
 {
     return {};
 }
 
-void FloatEQAudioProcessor::changeProgramName (int index, const juce::String& newName)
+void EQAudioProcessor::changeProgramName (int index, const juce::String& newName)
 {
 }
 
 //==============================================================================
-void FloatEQAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
+void EQAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
+    
+    equalizer.prepare(sampleRate, samplesPerBlock, getTotalNumOutputChannels());
+    equalizer.setParameters(equalizer_apvts);
 
-    lastSampleRate = sampleRate;
-    juce::dsp::ProcessSpec spec;
-
-    spec.sampleRate = sampleRate;
-    spec.maximumBlockSize = samplesPerBlock;
-    spec.numChannels = getTotalNumOutputChannels();
-
-    lowPassFilter.prepare(spec);
-    lowPassFilter.reset();
-
+    distortion.prepare(sampleRate, samplesPerBlock, getTotalNumOutputChannels());
+    distortion.setParameters(distortion_apvts);
 }
 
-void FloatEQAudioProcessor::releaseResources()
+void EQAudioProcessor::releaseResources()
 {
     // When playback stops, you can use this as an opportunity to free up any
     // spare memory, etc.
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
-bool FloatEQAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
+bool EQAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
   #if JucePlugin_IsMidiEffect
     juce::ignoreUnused (layouts);
@@ -145,11 +164,9 @@ bool FloatEQAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) 
 }
 #endif
 
-void FloatEQAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
+void EQAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
-    auto totalNumInputChannels  = getTotalNumInputChannels();
-    auto totalNumOutputChannels = getTotalNumOutputChannels();
 
     // In case we have more outputs than inputs, this code clears any output
     // channels that didn't contain input data, (because these aren't
@@ -157,76 +174,47 @@ void FloatEQAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
     // This is here to avoid people getting screaming feedback
     // when they first compile a plugin, but obviously you don't need to keep
     // this code if your algorithm always overwrites all the output channels.
-    for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
+    for (auto i = getTotalNumInputChannels(); i < getTotalNumOutputChannels(); ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
+    
+    juce::dsp::AudioBlock<float> block(buffer);
+    juce::dsp::ProcessContextReplacing<float> context(block);
+    equalizer.setParameters(equalizer_apvts);
+    equalizer.process(context);
 
-    juce::dsp::AudioBlock <float> block (buffer);
-    float freq = *apvts.getRawParameterValue("FREQ");
-    float quality = *apvts.getRawParameterValue("Q");
-    *lowPassFilter.state = *juce::dsp::IIR::Coefficients<float>::makeLowPass(lastSampleRate, freq, 
-    quality);
-    lowPassFilter.process(juce::dsp::ProcessContextReplacing<float> (block));
+    distortion.setParameters(distortion_apvts);
+    distortion.process(context);
+    
 }
 
 //==============================================================================
-bool FloatEQAudioProcessor::hasEditor() const
+bool EQAudioProcessor::hasEditor() const
 {
     return true; // (change this to false if you choose to not supply an editor)
 }
 
-juce::AudioProcessorEditor* FloatEQAudioProcessor::createEditor()
+juce::AudioProcessorEditor* EQAudioProcessor::createEditor()
 {
-    return new FloatEQAudioProcessorEditor (*this);
-    //return new juce::GenericAudioProcessorEditor(*this);
+    return new EQAudioProcessorEditor (*this);
 }
 
 //==============================================================================
-void FloatEQAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
+void EQAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     // You should use this method to store your parameters in the memory block.
     // You could do that either as raw data, or use the XML or ValueTree classes
     // as intermediaries to make it easy to save and load complex data.
 }
 
-void FloatEQAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
+void EQAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
     // You should use this method to restore your parameters from this memory block,
     // whose contents will have been created by the getStateInformation() call.
-}
-
-juce::AudioProcessorValueTreeState::ParameterLayout FloatEQAudioProcessor::createParameters() {
-    juce::AudioProcessorValueTreeState::ParameterLayout layout;
-    
-    // Freqency Cutoff knob
-    layout.add(std::make_unique<juce::AudioParameterFloat>(
-        "FREQ", 
-        "Cutoff Frequency", 
-        juce::NormalisableRange(20.0f, 20000.0f, 1.f, 0.75f), 
-        500.0f));
-
-    // Gain knob
-    layout.add(std::make_unique<juce::AudioParameterFloat>(
-        "GAIN",
-        "Gain",
-        juce::NormalisableRange(-24.0f, 24.0f, 0.01f, 1.f),
-        0.0f));
-
-    // Q factor knob
-    layout.add(std::make_unique<juce::AudioParameterFloat>(
-        "Q",
-        "Q Factor",
-        juce::NormalisableRange(0.1f, 10.0f, 0.01f, 1.f),
-        1.0f));
-
-
-
-
-    return layout;
 }
 
 //==============================================================================
 // This creates new instances of the plugin..
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
-    return new FloatEQAudioProcessor();
+    return new EQAudioProcessor();
 }

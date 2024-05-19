@@ -9,16 +9,18 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include "Equalizer.h"
+#include "Distortion.h"
 
 //==============================================================================
 /**
 */
-class FloatEQAudioProcessor  : public juce::AudioProcessor
+class EQAudioProcessor  : public juce::AudioProcessor
 {
 public:
     //==============================================================================
-    FloatEQAudioProcessor();
-    ~FloatEQAudioProcessor() override;
+    EQAudioProcessor();
+    ~EQAudioProcessor() override;
 
     //==============================================================================
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
@@ -52,16 +54,18 @@ public:
     //==============================================================================
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
-
-    juce::AudioProcessorValueTreeState::ParameterLayout createParameters();
-    juce::AudioProcessorValueTreeState apvts{ *this, nullptr, "Parameters", createParameters() };
-
+    
+    juce::AudioProcessorValueTreeState equalizer_apvts;
+    juce::AudioProcessorValueTreeState distortion_apvts;
 
 private:
+    
+    Equalizer equalizer;
+    const juce::StringArray filterTypes{ "LowPass Filter", "HighPass Filter", "BandPass Filter"};
 
-    juce::dsp::ProcessorDuplicator <juce::dsp::IIR::Filter<float>, juce::dsp::IIR::Coefficients <float>> lowPassFilter;
-    float lastSampleRate;
+    Distortion distortion;
+    const juce::StringArray distortionTypes{ "Mode 1", "Mode 2", "Mode 3", "Mode 4" };
 
     //==============================================================================
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FloatEQAudioProcessor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (EQAudioProcessor)
 };
