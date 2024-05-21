@@ -28,7 +28,7 @@
 
 
 // SOFTWARE DEFINITIONS
-#define WINDOW_SAMPLES 100
+#define WINDOW_SAMPLES 20
 #define SETTLE_TIME 3000  //Time in ms for the calibration
 
 #define X_UP 0x10    //--> 2.45V
@@ -93,8 +93,8 @@ int16_t readMap(int16_t delta) {
 
   delta = abs(delta);
 
-  for (int i = 0; i < MAP_SIZE - 1; i++) {
-    if (value_map[0][i] < delta  &&  value_map[0][i+1]) {
+  for (int i = 0; i < (MAP_SIZE - 1); i++) {
+    if ((value_map[0][i] < delta)  &&  (value_map[0][i+1] > delta)) {
       min_index = i;
       max_index = i+1;
       break;
