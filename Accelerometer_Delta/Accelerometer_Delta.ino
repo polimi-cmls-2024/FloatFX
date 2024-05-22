@@ -1,5 +1,6 @@
 /*************************** NOTES ***************************
   SAMD21G18A  12-bit ADC --> 4096 steps    (MKR WiFi 1010)
+      CONFIGURED FOR 10-bit --> 1023 steps
   https://docs.arduino.cc/resources/datasheets/ABX00023-datasheet.pdf
 
   MMA7361     basic output = 1.65 V + (0.80 V/g)
@@ -9,8 +10,8 @@
   Y --> Long side
   Z --> Up face
 
-  zeroG_ADCValue  = 1.65V --> 1.65/5 * 4095 = 1352
-  oneG_ADCValue   = 2.45V --> 2.45/5 * 4095 = 2007
+  zeroG_ADCValue  = 1.65V --> 1.65/5 * 1023 = 338
+  oneG_ADCValue   = 2.45V --> 2.45/5 * 1023 = 500
   *************************************************************/
 
 
@@ -22,9 +23,10 @@
 
 
 // HARDWARE DEFINITIONS
-#define X_PIN A5
-#define Y_PIN A4
-#define Z_PIN A3
+#define X_PIN       A5
+#define Y_PIN       A4
+#define Z_PIN       A3
+#define FINGER_PIN  A6
 
 
 // SOFTWARE DEFINITIONS
@@ -37,6 +39,8 @@
 #define Y_DOWN 0x21
 #define Z_UP 0x30
 #define Z_DOWN 0x31
+#define OPEN 0x40   // finger
+#define CLOSED 0x41
 
 #define X_THRES 80
 #define Y_THRES 80
@@ -44,26 +48,26 @@
 #define MAP_SIZE 10
 
 // Accelerometer values at rest from datasheet, to be overwritten by the calibration routine
-uint16_t xRest = 1352;
-uint16_t yRest = 1352;
-uint16_t zRest = 2007;
+uint16_t xRest = 338;
+uint16_t yRest = 338;
+uint16_t zRest = 500;
 
 const uint8_t PINS[3] = { X_PIN, Y_PIN, Z_PIN };    // pins array
 uint16_t axisVett[3];                               // axis values
 
-uint16_t old_state, new_state;
+uint16_t old_state, new_state, finger_state;
 int16_t value;                                      // relative value to set, from 0 to 100
 
-const int16_t value_map[2][MAP_SIZE] = {  (80, 10),
-                                          (90, 20),
-                                          (100, 30),
-                                          (120, 40),
-                                          (140, 50),
-                                          (160, 60),
-                                          (180, 70),
-                                          (200, 80),
-                                          (220, 90),
-                                          (240, 100)
+const int16_t value_map[MAP_SIZE][2] = {  {80, 10},       // mapping the delta w.r.t the resting position to the output percentage
+                                          {90, 20},
+                                          {100, 30},
+                                          {120, 40},
+                                          {140, 50},
+                                          {160, 60},
+                                          {180, 70},
+                                          {200, 80},
+                                          {220, 90},
+                                          {240, 100}
                                        };
 
 void setup() {
@@ -72,7 +76,10 @@ void setup() {
   calibrateAccelerometer();
   old_state = Z_UP;
   new_state = Z_UP;
+  finger_state = OPEN;
   value = 0;
+
+  pinMode(FINGER_PIN, INPUT_PULLUP);
 
 }
 
@@ -81,6 +88,7 @@ void loop() {
   readAxis(WINDOW_SAMPLES);
 
   detectRotation();
+  detectClamp();
 
   sendMessage();
 
@@ -94,18 +102,19 @@ int16_t readMap(int16_t delta) {
   delta = abs(delta);
 
   for (int i = 0; i < (MAP_SIZE - 1); i++) {
-    if ((value_map[0][i] < delta)  &&  (value_map[0][i+1] > delta)) {
+    if ((value_map[i][0] < delta)  &&  (value_map[i+1][0] > delta)) {
       min_index = i;
       max_index = i+1;
       break;
     }
   }
-  if ((value_map[0][MAP_SIZE-1] < delta)) {
+  if ((value_map[MAP_SIZE-1][0] < delta)) {
     min_index = MAP_SIZE - 1;
     max_index = min_index;
   }  
 
-  val = 0.5 * (value_map[1][min_index] + value_map[1][max_index]);
+  val = 0.5 * (value_map[min_index][1] + value_map[min_index][1]);
+
 
   return val;
 
@@ -115,6 +124,7 @@ int16_t readMap(int16_t delta) {
 void sendMessage() {
   //if (old_state == Z_UP && new_state != Z_UP) {          // only act upon movements from the calibration position
 
+  if (finger_state == CLOSED) {
 
     if (new_state == X_UP) {            // X fingertips, Y palm
       Serial.print("G+");
@@ -127,9 +137,19 @@ void sendMessage() {
     }
 
     Serial.println(value);
-  //}
+  }
 
+  //}
   old_state = new_state;
+}
+
+void detectClamp() {
+  if (digitalRead(FINGER_PIN) == 0) {
+    finger_state = CLOSED;
+  } else {
+    finger_state = OPEN;
+  }
+  return;
 }
 
 
