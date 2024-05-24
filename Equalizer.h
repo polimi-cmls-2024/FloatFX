@@ -12,7 +12,7 @@
 
 struct EqualizerParameters {
     int cutoffFreq;
-    float qFactor, gain;
+    float qFactor;
     int type;
 };
 
@@ -23,7 +23,6 @@ public:
     {
         parameters.cutoffFreq = apvts.getRawParameterValue("EQcutoff")->load();
         parameters.qFactor = apvts.getRawParameterValue("Q")->load();
-        parameters.gain = apvts.getRawParameterValue("gain")->load();
         parameters.type = static_cast<int>(apvts.getRawParameterValue("type")->load());
 
     }
@@ -44,7 +43,6 @@ public:
 
         auto block = (juce::dsp::AudioBlock<float>&) context.getInputBlock();
 
-        block.multiplyBy(parameters.gain);
         applyFilter(block);
         
 

@@ -11,6 +11,7 @@
 #include <JuceHeader.h>
 #include "Equalizer.h"
 #include "Distortion.h"
+#include "SerialDevice.h"
 
 //==============================================================================
 /**
@@ -54,7 +55,13 @@ public:
     //==============================================================================
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
+
+    //===== FOR ARDUINO
+    void initSerial();
     
+    //To read data from Arduino
+    SerialDevice serialDevice;
+
     juce::AudioProcessorValueTreeState equalizer_apvts;
     juce::AudioProcessorValueTreeState distortion_apvts;
 
@@ -65,6 +72,19 @@ private:
 
     Distortion distortion;
     const juce::StringArray distortionTypes{ "Mode 1", "Mode 2", "Mode 3", "Mode 4" };
+
+    // Delay
+    juce::AudioBuffer<float> mDelayBuffer;
+    int mWritePosition{ 0 };
+
+    void fillDelayBuffer(int, const int, const int, const float*, const float*);
+
+    void getFromDelayBuffer(juce::AudioBuffer<float> &, int, const int, const int, const float*, const float*);
+
+    void feedbackDelay(int channel, const int bufferLength, const int delayBufferLength, float* dryBuffer);
+
+
+   
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (EQAudioProcessor)

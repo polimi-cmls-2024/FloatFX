@@ -9,6 +9,11 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
+const juce::String kSerialPortName{ "\\\\.\\COM3" };
+
+void EQAudioProcessor::initSerial() {
+    serialDevice.init(kSerialPortName);
+}
 //==============================================================================
 EQAudioProcessor::EQAudioProcessor()
 #ifndef JucePlugin_PreferredChannelConfigurations
@@ -23,13 +28,14 @@ EQAudioProcessor::EQAudioProcessor()
                        equalizer_apvts(*this, nullptr), distortion_apvts(*this, nullptr)
 #endif
 {
+    
+    initSerial();
+
     //Equalizer parameters
     equalizer_apvts.createAndAddParameter(std::make_unique<juce::AudioParameterFloat>("EQcutoff",
         "EQ Cutoff", juce::NormalisableRange<float>(20.0f, 20000.0f, 1.0f), 500.0f));
     equalizer_apvts.createAndAddParameter(std::make_unique<juce::AudioParameterFloat>("Q",
         "Q", juce::NormalisableRange<float>(0.01f, 10.0f, 0.01f), 5.0f));
-    equalizer_apvts.createAndAddParameter(std::make_unique<juce::AudioParameterFloat>("gain",
-        "Gain", juce::NormalisableRange<float>(-24.0f, 24.0f, 1.0f), 0.0f, "dB"));
     equalizer_apvts.createAndAddParameter(std::make_unique<juce::AudioParameterChoice>("type",
         "Filter Type", filterTypes, 0));
 
@@ -124,6 +130,12 @@ void EQAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
+
+    const int numInputChannels = getTotalNumInputChannels();
+    const int delayBufferSize = 2 *sampleRate;
+
+    mDelayBuffer.setSize(numInputChannels, delayBufferSize);
+    mDelayBuffer.clear();
     
     equalizer.prepare(sampleRate, samplesPerBlock, getTotalNumOutputChannels());
     equalizer.setParameters(equalizer_apvts);
@@ -176,15 +188,85 @@ void EQAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
     // this code if your algorithm always overwrites all the output channels.
     for (auto i = getTotalNumInputChannels(); i < getTotalNumOutputChannels(); ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
-    
+
+
     juce::dsp::AudioBlock<float> block(buffer);
     juce::dsp::ProcessContextReplacing<float> context(block);
+
+    //Equalize
     equalizer.setParameters(equalizer_apvts);
     equalizer.process(context);
 
+    //Distort
     distortion.setParameters(distortion_apvts);
     distortion.process(context);
+
+
+    //Delay
+    const int bufferLength = buffer.getNumSamples();
+    const int delayBufferLength = mDelayBuffer.getNumSamples();
     
+
+    for (int channel = 0; channel < getTotalNumInputChannels(); ++channel) {
+
+        float* dryBuffer = buffer.getWritePointer(channel);
+
+        const float* bufferData = buffer.getReadPointer(channel);
+        const float* delayBufferData = mDelayBuffer.getReadPointer(channel);
+
+        fillDelayBuffer(channel, bufferLength, delayBufferLength, bufferData, delayBufferData);
+        getFromDelayBuffer(buffer, channel, bufferLength, delayBufferLength, bufferData, delayBufferData);
+        feedbackDelay(channel, bufferLength, delayBufferLength, dryBuffer);
+    }
+    mWritePosition += bufferLength;
+
+    //Circular buffer, in this way when we reach the end of the buffer,
+    //we start from the beginning again
+    mWritePosition %= delayBufferLength;
+
+    
+}
+
+void EQAudioProcessor::fillDelayBuffer(int channel, const int bufferLength, const int delayBufferLength,
+    const float* bufferData, const float* delayBufferData) {
+    if (delayBufferLength > bufferLength + mWritePosition) {
+        mDelayBuffer.copyFromWithRamp(channel, mWritePosition, bufferData, bufferLength, 0.8, 0.8);
+
+    }
+    else {
+        //In this case, i have to copy some samples at the end of the buffer, and the rest
+        //at the beginning of the buffer.
+        const int bufferRemaining = delayBufferLength - mWritePosition;
+        mDelayBuffer.copyFromWithRamp(channel, mWritePosition, bufferData, bufferRemaining, 0.8, 0.8);
+        mDelayBuffer.copyFromWithRamp(channel, 0, bufferData, bufferLength - bufferRemaining, 0.8, 0.8);
+    }
+}
+
+void EQAudioProcessor::getFromDelayBuffer(juce::AudioBuffer<float>& buffer, int channel, const int bufferLength, const int delayBufferLength,
+    const float* bufferData, const float* delayBufferData) {
+
+    int delayTime = 500 ;
+    const int readPosition = static_cast<int>(delayBufferLength + mWritePosition - (getSampleRate() * delayTime / 1000))%delayBufferLength;
+
+    if(delayBufferLength > bufferLength + readPosition)
+        buffer.copyFrom(channel, 0, delayBufferData + readPosition, bufferLength);
+    else {
+        const int bufferRemaining = delayBufferLength - readPosition;
+        buffer.copyFrom(channel, 0, delayBufferData + readPosition, bufferRemaining);
+        buffer.copyFrom(channel, bufferRemaining, delayBufferData, bufferLength - bufferRemaining);
+    }
+
+}void EQAudioProcessor::feedbackDelay(int channel, const int bufferLength, const int delayBufferLength, float* dryBuffer) {
+
+    if (delayBufferLength > bufferLength + mWritePosition) {
+        mDelayBuffer.addFromWithRamp(channel, mWritePosition, dryBuffer, bufferLength, 0.8, 0.8);
+    }
+    else {
+        const int bufferRemaining = delayBufferLength - mWritePosition;
+        mDelayBuffer.addFromWithRamp(channel, bufferRemaining, dryBuffer, bufferRemaining, 0.8, 0.8);
+        mDelayBuffer.addFromWithRamp(channel, 0, dryBuffer, bufferLength - bufferRemaining, 0.8, 0.8);
+        //mDelayBuffer.addFromWithRamp()
+    }
 }
 
 //==============================================================================
