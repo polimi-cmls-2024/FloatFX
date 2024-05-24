@@ -1,3 +1,12 @@
+/* Live SuperCollider Performance
+
+FloatFX2
+
+Author: Madhav
+
+*/
+
+
 //SynthDefs - Kick, Sin, Saw, Triangle, Pulse
 
 //Pseq, Sequentially output values from a list
