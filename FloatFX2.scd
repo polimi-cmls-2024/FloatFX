@@ -18,7 +18,7 @@
 
 //Pseries - Adds a number to another, n times. For eg: (50, 7, 6) -  adds 7 to 50, 6 times.
 
-
+s.boot
 
 (
 SynthDef(\kick, {
@@ -46,7 +46,7 @@ SynthDef(\hats, {
 
 SynthDef(\sin, {
 	var sig, env;
-	sig = SinOsc.ar(\freq.ir(1000) * 2.pow({(\dtun.ir(0.05)/12).sum3rand} ! 10)); //Detuning with a default of 0.05 and splitting into 5 voices
+	sig = SinOsc.ar(\freq.ir(1000) * 2.pow({(\dtun.ir(0.05)/12).sum3rand} ! 10)); //Detuning with a default of 0.05 and splitting into 10 voices
 	env = Env.linen(\atk.ir(0.001), \sus.ir(0.3), \dec.ir(0.1), curve: [-1, 0, -6]).ar(doneAction: 2);
 	sig = LPF.ar(sig, \lpf.ir(20000).clip(20, 20000));
 	sig = Splay.ar(sig); //Spread it across the stereo field.
@@ -59,7 +59,7 @@ SynthDef(\sin, {
 
 SynthDef(\saw, {
 	var sig, env;
-	sig = Saw.ar(\freq.ir(1000) * 2.pow({(\dtun.ir(0.05)/12).sum3rand} ! 10)); //Detuning with a default of 0.05 and splitting into 5 voices
+	sig = Saw.ar(\freq.ir(1000) * 2.pow({(\dtun.ir(0.05)/12).sum3rand} ! 10)); //Detuning with a default of 0.05 and splitting into 10 voices
 	env = Env.linen(\atk.ir(0.001), \sus.ir(0.3), \dec.ir(0.1), curve: [-1, 0, -6]).ar(doneAction: 2);
 	sig = LPF.ar(sig, \lpf.ir(20000).clip(20, 20000));
 	sig = Splay.ar(sig); //Spread it across the stereo field.
@@ -72,7 +72,7 @@ SynthDef(\saw, {
 
 SynthDef(\tri, {
 	var sig, env;
-	sig = LFTri.ar(\freq.ir(1000) * 2.pow({(\dtun.ir(0.05)/12).sum3rand} ! 10)); //Detuning with a default of 0.05 and splitting into 5 voices
+	sig = LFTri.ar(\freq.ir(1000) * 2.pow({(\dtun.ir(0.05)/12).sum3rand} ! 10)); //Detuning with a default of 0.05 and splitting into 10 voices
 	env = Env.linen(\atk.ir(0.001), \sus.ir(0.3), \dec.ir(0.1), curve: [-1, 0, -6]).ar(doneAction: 2);
 	sig = LPF.ar(sig, \lpf.ir(20000).clip(20, 20000));
 	sig = Splay.ar(sig); //Spread it across the stereo field.
@@ -85,7 +85,7 @@ SynthDef(\tri, {
 
 SynthDef(\pul, {
 	var sig, env;
-	sig = Pulse.ar(\freq.ir(1000) * 2.pow({(\dtun.ir(0.05)/12).sum3rand} ! 10), width: \wid.ir(0.6)); //Detuning with a default of 0.05 and splitting into 5 voices
+	sig = Pulse.ar(\freq.ir(1000) * 2.pow({(\dtun.ir(0.05)/12).sum3rand} ! 10), width: \wid.ir(0.6)); //Detuning with a default of 0.05 and splitting into 10 voices
 	env = Env.linen(\atk.ir(0.001), \sus.ir(0.3), \dec.ir(0.1), curve: [-1, 0, -6]).ar(doneAction: 2);
 	sig = LPF.ar(sig, \lpf.ir(20000).clip(20, 20000));
 	sig = Splay.ar(sig); //Spread it across the stereo field.
@@ -108,7 +108,7 @@ SynthDef(\pul, {
 SynthDef(\rain, {
 	arg freq;
 	var sig, env;
-	sig = PinkNoise.ar(0.1!2); //amplitude of 0.5 (mul) in 2 channels L and R.
+	sig = PinkNoise.ar(0.1!2); //amplitude of 0.1 (mul) in 2 channels L and R.
 	sig = RLPF.ar(sig, freq: 500, rq: 1);
 	env = SinOsc.kr(1, 2*pi);
 	sig = sig * env;
@@ -117,7 +117,7 @@ SynthDef(\rain, {
 
 )
 
-//test the synths here
+//test the synths here. Only for testing purpose, not used during playback.
 
 Synth(\kick)
 
@@ -134,7 +134,7 @@ Synth(\rain)
 /*Synth(\arp)*/
 
 
-//ProxySpace
+//ProxySpace initialisation
 
 (
 p = ProxySpace(s, clock: TempoClock(100/60)).fadeTime_(3).quant_(4).push;
@@ -147,7 +147,9 @@ p = ProxySpace(s, clock: TempoClock(100/60)).fadeTime_(3).quant_(4).push;
 ~rain.play;
 )
 
+//Playback
 
+(
 (
 ~kick = Pbind(
 
@@ -156,7 +158,7 @@ p = ProxySpace(s, clock: TempoClock(100/60)).fadeTime_(3).quant_(4).push;
 	\dur, Pseq([1, 0, 1, 0,], inf),
 	\db, -30.clip(-30, -15),
 			)
-)
+);
 
 (
 ~hats = Pbind(
@@ -166,7 +168,7 @@ p = ProxySpace(s, clock: TempoClock(100/60)).fadeTime_(3).quant_(4).push;
 	\hpf, Pexprand(1000, 20000, inf),
 	\pan, Pwhite(-1.0, 1.0),
 )
-)
+);
 
 
 
@@ -183,7 +185,7 @@ p = ProxySpace(s, clock: TempoClock(100/60)).fadeTime_(3).quant_(4).push;
 	//\lpf, 5000,
 )
 
-)
+);
 
 (
 ~pads = Pbind(
@@ -194,7 +196,7 @@ p = ProxySpace(s, clock: TempoClock(100/60)).fadeTime_(3).quant_(4).push;
 	\atk, 8,
 	\rel, 8,
 )
-)
+);
 
 (
 ~arp = Pbind(
@@ -206,22 +208,20 @@ p = ProxySpace(s, clock: TempoClock(100/60)).fadeTime_(3).quant_(4).push;
 	\pan, Pwhite(-1.0, 1.0),
 	\dur, 0.25,
 )
-)
+);
 
+)
+// (
+// ~rain = Pbind(
+// \instrument, \rain)
+// )
+
+//Stop Playback
 (
-~rain = Pbind(
-	\instrument, \rain)
-)
-
-
-s.boot
-
-
-
 ~kick.stop;
 ~dots.stop;
 ~hats.stop;
 ~arp.stop;
 ~pads.stop;
 ~rain.stop;
-
+)
