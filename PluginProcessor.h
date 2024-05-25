@@ -64,6 +64,7 @@ public:
 
     juce::AudioProcessorValueTreeState equalizer_apvts;
     juce::AudioProcessorValueTreeState distortion_apvts;
+    juce::AudioProcessorValueTreeState delay_apvts;
 
 private:
     
@@ -77,11 +78,11 @@ private:
     juce::AudioBuffer<float> mDelayBuffer;
     int mWritePosition{ 0 };
 
-    void fillDelayBuffer(int, const int, const int, const float*, const float*);
+    void fillDelayBuffer(int, const int, const int, const float*, const float*, const float);
 
     void getFromDelayBuffer(juce::AudioBuffer<float> &, int, const int, const int, const float*, const float*);
 
-    void feedbackDelay(int channel, const int bufferLength, const int delayBufferLength, float* dryBuffer);
+    void feedbackDelay(int channel, const int bufferLength, const int delayBufferLength, float* dryBuffer, const float);
 
 
    

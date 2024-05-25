@@ -7,7 +7,7 @@
 
   ==============================================================================
 */
-
+#include <chrono>
 #include "SerialDevice.h"
 
 #define kBPS 9600
@@ -253,7 +253,10 @@ void SerialDevice::run ()
 
             case ThreadTask::processSerialPort:
             {   
+                using namespace std::chrono;
+             
                 isConnected = true;
+                int time_start, time_end;
                 // handle reading from the serial port
                 if ((serialPortInput != nullptr) && (!serialPortInput->isExhausted ()))
                 {
@@ -281,6 +284,7 @@ void SerialDevice::run ()
                         // parse incoming data
                         while (dataIndex < bytesRead)
                         {
+
                             const uint8_t dataByte = incomingData [dataIndex];
                             // NOTE: the following line prints each byte received in the debug output window
                             char character = (char)dataByte;
@@ -319,6 +323,7 @@ void SerialDevice::run ()
                             }*/
                             if (character == X_AXIS || character == Y_AXIS)
                             {
+                                long time_start = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
                                 m.direction = character;
                             }
                             if (character == PLUS_SIGN || character == MINUS_SIGN)
@@ -328,6 +333,7 @@ void SerialDevice::run ()
                             if (character >= '0' && character <= '9')
                                 number.push_back(character);
                             if (character == '\r') {
+                                
                                 m.value = stoi(number);
                                 messages.push(m);
                                 number = "";
@@ -338,7 +344,11 @@ void SerialDevice::run ()
                                 DBG("VALUE");
                                 DBG(m.value);
                                 DBG("\n");*/
+                                long time_end = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+                                DBG("TIME PASSED");
+                                DBG(time_end - time_start);
                             }
+                            
                             ++dataIndex;
                             
                         }

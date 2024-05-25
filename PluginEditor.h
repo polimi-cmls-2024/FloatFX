@@ -11,6 +11,7 @@
 #include <JuceHeader.h>
 #include "PluginProcessor.h"
 #include "MappableLabel.h"
+#include "MapButton.h"
 //==============================================================================
 /**
 */
@@ -29,6 +30,9 @@ public:
     
     void initialize_distortion_parameters();
     void resize_distortion_elements();
+
+    void initialize_delay_parameters();
+    void resize_delay_parameters();
     
     void filterButtonClicked(int);
     void distortionButtonClicked(int);
@@ -38,7 +42,9 @@ public:
     //For parameter mapping
     void buttonClicked(juce::Button* button) override;
 
-    void getMappingParameters();
+    void initialize_mapping_button(MapButton& b);
+    void mapButtonClicked(MapButton* b);
+
 
 private:
     // This reference is provided as a quick way for your editor to
@@ -70,8 +76,11 @@ private:
 
     std::array<juce::ToggleButton, 4> distortionTypeButtons;
 
-    //juce::Label ModLabel;
+    //Delay
+    juce::Slider delayGain, delayTime;
+    juce::Label delayGainLabel, delayTimeLabel;
 
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> delayGainAttach, delayTimeAttach;
     //To modify the sliders from incoming data
 
     void timerCallback() override;
@@ -86,8 +95,18 @@ private:
     bool mapParameter1{ false };
     bool mapParameter2{ false };
 
-    float param1Range;
-    float param2Range;
+    friend class MapButton;
+    //Buttons for mapping parameters
+    //EQ
+    MapButton filterCutoffMap{ &filterCutoff }, QMap{ &Q };
+    //Distortion
+    MapButton driveMap{ &driveKnob }, angerMap{ &angerKnob }, distHPFMap{ &HPFKnob }, distLPFMap{ &LPFKnob }, distVolumeMap{ &volumeKnob }, distDryWetMap{ &mixKnob };
+    //Delay
+    MapButton feedbackMap{&delayGain}, delayTimeMap{&delayTime};
+
+    juce::Colour textColor{ juce::Colours::black };
+
+
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (EQAudioProcessorEditor)
 };
