@@ -16,7 +16,7 @@ void oscEvent(OscMessage message) {
   
   else if(message.addrPattern().equals("/spectrum")){
     for (int i = 0; i < nBeans; i++) {
-      currentValues.set(i, clamp(message.get(i).floatValue(), 0f, 1f));
+      currentValues.set(i, clamp(message.get(i).floatValue() / 50, 0f, 1f));
     }
   }
   

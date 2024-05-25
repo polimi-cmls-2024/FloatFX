@@ -2,18 +2,20 @@ void setup() {
   
   // Initialize general parameters
   frameRate(framerate);
-  size(600, 300);
-  fullScreen();
+  size(1200, 600);
+  //fullScreen();
   
   // Initialize OSC
-  oscP5 = new OscP5(this, port);
   myRemoteLocation = new NetAddress(ip,port);
-  
+  OscProperties properties = new OscProperties();
+  properties.setListeningPort(port);
+  properties.setDatagramSize(99999999);
+  oscP5 = new OscP5(this, properties);
+
   // Initialize global variables
   nw = new PVector((int)(width*padding/2), (int)(height*padding/2));
   se = new PVector((int)(width*(1-padding/2)), (int)(height*(1-padding/2)));
   size = se.copy().sub(nw);
-  barWidth = Math.round(size.x / nBeans);
   currentValues = new ArrayList<Float>(); // [0,1]
   smoothValues = new ArrayList<Float>(); // [0,1]
   prevValues = new ArrayList<Float>(); // [0,1]
@@ -49,17 +51,16 @@ void draw() {
 }
 
 void drawBars(){
-  int lastX = (int)nw.x;
   for (int i = 0; i < nBeans; i++) {
     
     // Calculate bar coordinates
-    int barHeight = Math.round(smoothValues.get(i) * size.y);
-    int barX = Math.round((float)i / nBeans * size.x);
+    int barHeight = calculateBarHeight(smoothValues.get(i));
+    int barXLeft = calculateX(i);
+    int barXRight = calculateX(i+1);
+    int barWidth = Math.round(barXRight - barXLeft);
     
     // Draw bar
     fill(255);
-    rect(lastX + 1, nw.y + size.y - barHeight, barWidth, barHeight);
-    
-    lastX = (int)nw.x + barX + barWidth;
+    rect(nw.x + barXLeft, nw.y + size.y - barHeight, barWidth+1, barHeight);
   }
 }

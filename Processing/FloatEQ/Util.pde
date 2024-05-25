@@ -6,5 +6,26 @@ public static float clamp(float val, float min, float max) {
 // Get intermediate value for smooth
 public float getSmoothValue(float prev, float current){
   float diff = current - prev;
-  return prev + diff * (1.0 - smoothAmount);
+  if(diff >= 0){
+    return prev + diff * (1.0 - (float)Math.pow(smoothUp, 0.1));
+  }else{
+    return prev + diff * (1.0 - (float)Math.pow(smoothDown, 0.1));
+  }
+}
+
+public int calculateBarHeight(float value){
+    double valueLog = 20 * Math.log10(value);
+    valueLog = Math.max(minDb, valueLog);
+    valueLog = (valueLog - minDb) / (-minDb);
+    int barHeight = (int)Math.round(valueLog * size.y);
+    return barHeight;
+}
+
+public int calculateX(int beanIndex){
+    double minFDb = 20 * Math.log10(1.0/nBeans);
+    double xLog = 20 * Math.log10((float)beanIndex / nBeans);
+    xLog = Math.max(minFDb, xLog);
+    xLog = (xLog - minFDb) / (-minFDb);
+    int x = (int)Math.round(xLog * size.x);
+    return x;
 }
