@@ -2,7 +2,7 @@ void setup() {
   
   // Initialize general parameters
   frameRate(framerate);
-  size(1200, 600);
+  size(1100, 500);
   //fullScreen();
   
   // Initialize OSC
@@ -61,6 +61,6 @@ void drawBars(){
     
     // Draw bar
     fill(255);
-    rect(nw.x + barXLeft, nw.y + size.y - barHeight, barWidth+1, barHeight);
+    rect(nw.x + barXLeft, nw.y + size.y - barHeight, barWidth+1, barHeight, 1000, 1000, 0, 0);
   }
 }

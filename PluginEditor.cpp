@@ -381,18 +381,30 @@ void EQAudioProcessorEditor::buttonClicked(juce::Button* button) {
 }
 
 void EQAudioProcessorEditor::initialize_mapping_button(MapButton& b) {
-    b.addListener(this);
-    b.setAlpha(0);
+    b.setAlpha(50);
     b.onClick = [&]() { mapButtonClicked(&b); };
 }
 
 void EQAudioProcessorEditor::mapButtonClicked(MapButton* b) {
     if (mapParameter1) {
+        if (mapButton1 != b && mapButton1 != nullptr && mapButton1 != mapButton2) {
+            mapButton1->setColour(juce::TextButton::ColourIds::buttonColourId, juce::Colours::darkgrey);
+        }
+        mapButton1 = b;
+        b->setColour(juce::TextButton::ColourIds::buttonColourId, juce::Colours::red);
         param1 = b->attachedSlider;
         param1Button.setToggleState(false, juce::NotificationType::dontSendNotification);
         mapParameter1 = false;
+        /*if (mapButton1 == mapButton2) {
+            mapButton2->setColour(juce::TextButton::ColourIds::buttonColourId, juce::Colours::darkgrey);
+        }*/
     }
     if (mapParameter2) {
+        if (mapButton2 != b && mapButton2 != nullptr && mapButton1 != mapButton2) {
+            mapButton2->setColour(juce::TextButton::ColourIds::buttonColourId, juce::Colours::darkgrey);
+        }
+        mapButton2 = b;
+        b->setColour(juce::TextButton::ColourIds::buttonColourId, juce::Colours::yellow);
         param2 = b->attachedSlider;
         param2Button.setToggleState(false, juce::NotificationType::dontSendNotification);
         mapParameter2 = false;

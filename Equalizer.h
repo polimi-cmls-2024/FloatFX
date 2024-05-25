@@ -78,4 +78,3 @@ private:
         juce::dsp::IIR::Coefficients<float>>;
     StereoFilter filter;
 };
-

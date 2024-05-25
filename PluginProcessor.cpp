@@ -233,7 +233,11 @@ void EQAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mid
     //we start from the beginning again
     mWritePosition %= delayBufferLength;
 
-    
+
+    float* channelL = buffer.getWritePointer(0);
+    juce::AudioBuffer<float> channelLCopy(1, buffer.getNumSamples());
+    channelLCopy.copyFrom(0, 0, buffer, 0, 0, buffer.getNumSamples());
+    fft.processBlock(channelLCopy.getWritePointer(0), bufferLength, false);
 }
 
 void EQAudioProcessor::fillDelayBuffer(int channel, const int bufferLength, const int delayBufferLength,

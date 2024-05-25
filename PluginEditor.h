@@ -95,6 +95,9 @@ private:
     bool mapParameter1{ false };
     bool mapParameter2{ false };
 
+    MapButton* mapButton1{ nullptr };
+    MapButton* mapButton2{ nullptr };
+
     friend class MapButton;
     //Buttons for mapping parameters
     //EQ

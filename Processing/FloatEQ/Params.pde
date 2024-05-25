@@ -1,6 +1,6 @@
 // General
 int framerate = 75;
-float minDb = -60;
+float minDb = -120;
 
 // Visualization
 int nBeans = 512;

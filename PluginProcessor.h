@@ -12,6 +12,7 @@
 #include "Equalizer.h"
 #include "Distortion.h"
 #include "SerialDevice.h"
+#include "FFTProcessor.h"
 
 //==============================================================================
 /**
@@ -85,6 +86,7 @@ private:
     void feedbackDelay(int channel, const int bufferLength, const int delayBufferLength, float* dryBuffer, const float);
 
 
+    FFTProcessor fft;
    
 
     //==============================================================================
