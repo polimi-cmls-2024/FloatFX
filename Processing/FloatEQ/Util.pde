@@ -21,7 +21,7 @@ public int calculateBarHeight(float value, int i){
     int barHeight = (int)Math.round(valueLog * size.y);
     
     double correction = ((float)xValues.get(i) / size.x) * 2 - 1;
-    correction = correction * bassCorrection * size.y * 0.3;
+    correction = correction * bassCorrection * 0.5 * barHeight;
     
     return barHeight + (int)correction;
 }
