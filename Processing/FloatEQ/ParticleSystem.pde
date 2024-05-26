@@ -15,6 +15,7 @@ class ParticleSystem {
       
       int posX = (int)(posLeft.x + random(barWidth));
       int posY = (int)(posLeft.y + (barWidth/2 - Math.sqrt(Math.pow((float)barWidth/2, 2) - Math.pow(posX-posCenter.x, 2))));
+      posY = (int)Math.min(posY, se.y);
       
       particles[i] = new Particle(posX, posY + random(2), lifespan);
       particles[i].applyForce(new PVector(0, -0.5));
