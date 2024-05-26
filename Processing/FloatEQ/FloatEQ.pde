@@ -65,7 +65,7 @@ void drawBars(){
       nw.x + barXLeft,
       nw.y + size.y - barHeight, 
       barWidth+1,
-      barHeight, 
+      barHeight + barWidth, 
       barWidth/2, barWidth/2, 0, 0);
   }
 }
