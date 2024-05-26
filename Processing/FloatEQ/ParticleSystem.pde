@@ -4,13 +4,19 @@ class ParticleSystem {
   Particle[] particles;
   int nPart;
   
-  ParticleSystem (int nParticles, float lifespanTime, PVector pos, int barWidth) {
+  ParticleSystem (int nParticles, float lifespanTime, PVector posLeft, int barWidth) {
     lifespan = lifespanTime;
     nPart = nParticles;
     particles = new Particle[nPart];
     
+    PVector posCenter = new PVector(posLeft.x + barWidth/2, posLeft.y);
+    
     for (int i = 0; i < nPart; i++) {
-      particles[i] = new Particle(pos.x + random(barWidth), pos.y + random(2), lifespan);
+      
+      int posX = (int)(posLeft.x + random(barWidth));
+      int posY = (int)(posLeft.y + (barWidth/2 - Math.sqrt(Math.pow((float)barWidth/2, 2) - Math.pow(posX-posCenter.x, 2))));
+      
+      particles[i] = new Particle(posX, posY + random(2), lifespan);
       particles[i].applyForce(new PVector(0, -0.5));
       particles[i].update();
     }
@@ -50,14 +56,18 @@ void updateParticleSystems(){
   for (int i = 0; i < nBeans; i++) {
     
     int barHeight = calculateBarHeight(smoothValues.get(i));
-    
     int barXLeft = calculateX(i);
     int barXRight = calculateX(i+1);
-    
     int barWidth = Math.round(barXRight - barXLeft);
     
     particleSystems.add(
-    new ParticleSystem ((int)Math.ceil(nParticlesPerPx * barWidth), particleLifespan, new PVector(nw.x + barXLeft, nw.y + size.y - barHeight), barWidth));
+    new ParticleSystem (
+      (int)Math.ceil(nParticlesPerPx * barWidth),
+      particleLifespan, 
+      new PVector(nw.x + barXLeft, nw.y + size.y - barHeight), 
+      barWidth
+      )
+    );
   }
   
   // Update systems

@@ -61,6 +61,11 @@ void drawBars(){
     
     // Draw bar
     fill(255);
-    rect(nw.x + barXLeft, nw.y + size.y - barHeight, barWidth+1, barHeight, 1000, 1000, 0, 0);
+    rect(
+      nw.x + barXLeft,
+      nw.y + size.y - barHeight, 
+      barWidth+1,
+      barHeight, 
+      barWidth/2, barWidth/2, 0, 0);
   }
 }

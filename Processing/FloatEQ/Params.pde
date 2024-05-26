@@ -1,5 +1,5 @@
 // General
-int framerate = 75;
+int framerate = 60;
 float minDb = -120;
 
 // Visualization

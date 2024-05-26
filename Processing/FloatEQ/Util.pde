@@ -23,7 +23,7 @@ public int calculateBarHeight(float value){
 
 public int calculateX(int beanIndex){
     double minFDb = 20 * Math.log10(1.0/nBeans);
-    double xLog = 20 * Math.log10((float)beanIndex / nBeans);
+    double xLog = 20 * Math.log10((float)(beanIndex+1) / nBeans);
     xLog = Math.max(minFDb, xLog);
     xLog = (xLog - minFDb) / (-minFDb);
     int x = (int)Math.round(xLog * size.x);
