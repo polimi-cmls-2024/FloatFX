@@ -66,6 +66,7 @@ public:
     juce::AudioProcessorValueTreeState equalizer_apvts;
     juce::AudioProcessorValueTreeState distortion_apvts;
     juce::AudioProcessorValueTreeState delay_apvts;
+    juce::AudioProcessorValueTreeState out_apvts;
 
 private:
     

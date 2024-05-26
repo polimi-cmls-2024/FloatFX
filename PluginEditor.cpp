@@ -23,17 +23,18 @@ EQAudioProcessorEditor::EQAudioProcessorEditor (EQAudioProcessor& p)
 
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
-    setSize (700, 500);
+    setSize (640, 460);
     
-    EQPanel.setBounds(0, 0, 160, 450);
-    distortionPanel.setBounds(EQPanel.getTopRight().getX(), 0, 230, 450);
-    delayPanel.setBounds(distortionPanel.getTopRight().getX(), 0, 230, 450);
-    volumePanel.setBounds(delayPanel.getTopRight().getX(), 0, 100, 450);
-    mapPanel.setBounds(0, EQPanel.getBottomLeft().getY(), 700, 50);
+    eqPanel.setBounds(5, 5, 255, 245);
+    distortionPanel.setBounds(265, 5, 250, 450);
+    delayPanel.setBounds(5, 255, 255, 200);
+    volumePanel.setBounds(520, 5, 115, 290);
+    mapPanel.setBounds(520, 300, 115, 155);
 
     initialize_equalizer_parameters();
     initialize_distortion_parameters();
     initialize_delay_parameters();
+    initialize_out_parameters();
     initialize_mapping_buttons();
 }
 
@@ -45,20 +46,18 @@ EQAudioProcessorEditor::~EQAudioProcessorEditor()
 void EQAudioProcessorEditor::paint (juce::Graphics& g)
 {
     // (Our component is opaque, so we must completely fill the background with a solid colour)
-    g.fillAll (juce::Colours::aquamarine);
-    g.setColour(juce::Colour(255, 253, 241));
-    g.fillRect(EQPanel);
-    g.setColour(juce::Colour(253, 231, 220));
+    g.fillAll (juce::Colours::black);
+
+    g.setColour(panelBackgroundColorLight);
+    g.fillRect(eqPanel);
     g.fillRect(distortionPanel);
-    g.setColour(juce::Colour(248, 189, 183));
     g.fillRect(delayPanel);
-    g.setColour(juce::Colour(106, 68, 57));
+
+    g.setColour(panelBackgroundColorDark);
     g.fillRect(volumePanel);
-    g.setColour(juce::Colour(106, 68, 57));
     g.fillRect(mapPanel);
 
-    g.setFont (15.0f);
-    
+    g.setFont (14.0f);
 }
 
 void EQAudioProcessorEditor::resized()
@@ -69,24 +68,37 @@ void EQAudioProcessorEditor::resized()
     resize_equalizer_parameters();
     resize_distortion_elements();
     resize_delay_parameters();
+    resize_out_parameters();
     resize_mapping_buttons();
+
 }
 
 void EQAudioProcessorEditor::initialize_equalizer_parameters(){
+
+    eqPanelLabel.setText("EQ", juce::dontSendNotification);
+    eqPanelLabel.setColour(juce::Label::ColourIds::textColourId, panelTitleColor);
+    eqPanelLabel.setJustificationType(12);
+
+    addAndMakeVisible(eqPanelLabel);
     addAndMakeVisible(filterCutoff);
     addAndMakeVisible(filterCutoffMap);
-    addAndMakeVisible(Q);
     addAndMakeVisible(filterCutoffLabel);
+    addAndMakeVisible(Q);
     addAndMakeVisible(QLabel);
     addAndMakeVisible(QMap);
 
     filterCutoff.setSliderStyle(juce::Slider::SliderStyle::RotaryVerticalDrag);
-    filterCutoff.setTextBoxStyle(juce::Slider::TextBoxAbove, false, 100, 20);
+    filterCutoff.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 100, 20);
     filterCutoff.setColour(juce::Slider::ColourIds::textBoxTextColourId, textColor);
+    filterCutoff.setColour(juce::Slider::ColourIds::rotarySliderFillColourId, knobBackgroundColor);
+    filterCutoff.setColour(juce::Slider::ColourIds::thumbColourId, knobThumbColor);
     initialize_mapping_button(filterCutoffMap);
+
     Q.setSliderStyle(juce::Slider::SliderStyle::RotaryVerticalDrag);
-    Q.setTextBoxStyle(juce::Slider::TextBoxAbove, false, 100, 20);
+    Q.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 100, 20);
     Q.setColour(juce::Slider::ColourIds::textBoxTextColourId, textColor);
+    Q.setColour(juce::Slider::ColourIds::rotarySliderFillColourId, knobBackgroundColor);
+    Q.setColour(juce::Slider::ColourIds::thumbColourId, knobThumbColor);
     initialize_mapping_button(QMap);
 
     filterCutoffLabel.setText("CUTOFF", juce::NotificationType::dontSendNotification);
@@ -98,12 +110,12 @@ void EQAudioProcessorEditor::initialize_equalizer_parameters(){
     QAttach = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
         audioProcessor.equalizer_apvts, "Q", Q);
     
-    std::string labels[3]{ "LPF", "HPF", "BANDPF" };
+    std::string labels[3]{ "LP", "HP", "BP" };
     for (int i = 0; i < 3; i++)
     {
         addAndMakeVisible(filterTypesLabels[i]);
         filterTypesLabels[i].setText(labels[i], juce::NotificationType::dontSendNotification);
-        
+        filterTypesLabels[i].setColour(juce::Label::ColourIds::textColourId, textColor);
     }
 
     // setup type buttons
@@ -111,6 +123,9 @@ void EQAudioProcessorEditor::initialize_equalizer_parameters(){
     {
         addAndMakeVisible(typeButtons[i]);
         typeButtons[i].setRadioGroupId(1000);
+        typeButtons[i].setColour(juce::Label::ColourIds::backgroundColourId, textColor);
+        typeButtons[i].setColour(juce::Label::ColourIds::textColourId, textColor);
+        typeButtons[i].setColour(juce::Label::ColourIds::backgroundColourId, textColor);
     }
     typeButtons[0].onClick = [&]() { filterButtonClicked(0); };
     typeButtons[1].onClick = [&]() { filterButtonClicked(1); };
@@ -121,47 +136,64 @@ void EQAudioProcessorEditor::initialize_equalizer_parameters(){
 }
 
 void EQAudioProcessorEditor::resize_equalizer_parameters(){
-    const int knobWidth = 100;
+    const int knobWidth = 90;
     const int buttonWidth = 30;
-    filterCutoff.setBounds(EQPanel.getTopLeft().getX()+25, EQPanel.getTopLeft().getY()+40, knobWidth, knobWidth);
-    filterCutoffLabel.setBounds(filterCutoff.getX()+20, filterCutoff.getY() - 20, 90, 20);
-    filterCutoffMap.setBounds(EQPanel.getTopLeft().getX() /* + 25*/, EQPanel.getTopLeft().getY() + 40, knobWidth/3, knobWidth/3);
-    filterCutoffMap.setCentrePosition(filterCutoff.getX() + knobWidth/2, filterCutoff.getY() + 10 + knobWidth / 2);
-    Q.setBounds(EQPanel.getTopLeft().getX() + 25, filterCutoff.getBottom() + 20, knobWidth, knobWidth);
-    QLabel.setBounds(Q.getX() + 35, Q.getY() -25, 90, 20);
-    QMap.setBounds(EQPanel.getTopLeft().getX() + 25, filterCutoff.getBottom() + 20, knobWidth / 3, knobWidth / 3);
-    QMap.setCentrePosition(Q.getX() + knobWidth / 2, Q.getY() + 10 + knobWidth / 2);
+
+    eqPanelLabel.setBounds(5, 15, 255, 30);
+
+    filterCutoff.setBounds(20, 80, knobWidth, knobWidth);
+    filterCutoffLabel.setBounds(55, 60, 90, 20);
+    filterCutoffMap.setBounds(25, 60, 30, 20);
+    //filterCutoffMap.setCentrePosition(filterCutoffLabel.getX() - 20, filterCutoffLabel.getY());
+
+    Q.setBounds(120 + 20, 80, knobWidth, knobWidth);
+    QLabel.setBounds(120 + 55 + 15, 60, 90, 20);
+    QMap.setBounds(120 + 25 + 15, 60, 30, 20);
+    //QMap.setCentrePosition(Q.getX() + knobWidth / 2, Q.getY() + 10 + knobWidth / 2);
+
     for (int i = 0; i < 3; i++)
     {
-    
-        typeButtons[i].setBounds(Q.getX(), Q.getBottom()+20+i*40, buttonWidth, buttonWidth);
-        filterTypesLabels[i].setBounds(typeButtons[i].getX() + 50 , typeButtons[i].getY() + 5, 90, 20);
-        //filterTypesLabels
+        typeButtons[i].setBounds(eqPanel.getTopLeft().getX() + 40 + i * 70, eqPanel.getTopLeft().getY() + 200, buttonWidth, buttonWidth);
+        filterTypesLabels[i].setBounds(typeButtons[i].getX() + 25, eqPanel.getTopLeft().getY() + 205, 90, 20);
     }
 }
 
 void EQAudioProcessorEditor::initialize_distortion_parameters() {
 
+    distortionPanelLabel.setText("Distortion", juce::dontSendNotification);
+    distortionPanelLabel.setColour(juce::Label::ColourIds::textColourId, panelTitleColor);
+    distortionPanelLabel.setJustificationType(12);
 
     driveKnob.setSliderStyle(juce::Slider::SliderStyle::RotaryVerticalDrag);
     driveKnob.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 100, 20);
     driveKnob.setColour(juce::Slider::ColourIds::textBoxTextColourId, textColor);
+    driveKnob.setColour(juce::Slider::ColourIds::rotarySliderFillColourId, knobBackgroundColor);
+    driveKnob.setColour(juce::Slider::ColourIds::thumbColourId, knobThumbColor);
     volumeKnob.setSliderStyle(juce::Slider::SliderStyle::RotaryVerticalDrag);
     volumeKnob.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 100, 20);
     volumeKnob.setColour(juce::Slider::ColourIds::textBoxTextColourId, textColor);
+    volumeKnob.setColour(juce::Slider::ColourIds::rotarySliderFillColourId, knobBackgroundColor);
+    volumeKnob.setColour(juce::Slider::ColourIds::thumbColourId, knobThumbColor);
     mixKnob.setSliderStyle(juce::Slider::SliderStyle::RotaryVerticalDrag);
     mixKnob.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 100, 20);
     mixKnob.setColour(juce::Slider::ColourIds::textBoxTextColourId, textColor);
+    mixKnob.setColour(juce::Slider::ColourIds::rotarySliderFillColourId, knobBackgroundColor);
+    mixKnob.setColour(juce::Slider::ColourIds::thumbColourId, knobThumbColor);
     angerKnob.setSliderStyle(juce::Slider::SliderStyle::RotaryVerticalDrag);
     angerKnob.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 100, 20);
     angerKnob.setColour(juce::Slider::ColourIds::textBoxTextColourId, textColor);
+    angerKnob.setColour(juce::Slider::ColourIds::rotarySliderFillColourId, knobBackgroundColor);
+    angerKnob.setColour(juce::Slider::ColourIds::thumbColourId, knobThumbColor);
     HPFKnob.setSliderStyle(juce::Slider::SliderStyle::RotaryVerticalDrag);
     HPFKnob.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 100, 20);
     HPFKnob.setColour(juce::Slider::ColourIds::textBoxTextColourId, textColor);
+    HPFKnob.setColour(juce::Slider::ColourIds::rotarySliderFillColourId, knobBackgroundColor);
+    HPFKnob.setColour(juce::Slider::ColourIds::thumbColourId, knobThumbColor);
     LPFKnob.setSliderStyle(juce::Slider::SliderStyle::RotaryVerticalDrag);
     LPFKnob.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 100, 20);
     LPFKnob.setColour(juce::Slider::ColourIds::textBoxTextColourId, textColor);
-
+    LPFKnob.setColour(juce::Slider::ColourIds::rotarySliderFillColourId, knobBackgroundColor);
+    LPFKnob.setColour(juce::Slider::ColourIds::thumbColourId, knobThumbColor);
 
     driveLabel.setText("DRIVE", juce::dontSendNotification);
     driveLabel.setColour(juce::Label::ColourIds::textColourId, textColor);
@@ -182,7 +214,8 @@ void EQAudioProcessorEditor::initialize_distortion_parameters() {
     addAndMakeVisible(angerKnob);
     addAndMakeVisible(HPFKnob);
     addAndMakeVisible(LPFKnob);
-
+    
+    addAndMakeVisible(distortionPanelLabel);
     addAndMakeVisible(driveLabel);
     addAndMakeVisible(mixLabel);
     addAndMakeVisible(volumeLabel);
@@ -241,46 +274,58 @@ void EQAudioProcessorEditor::initialize_distortion_parameters() {
 }
 
 void EQAudioProcessorEditor::resize_distortion_elements() {
-    const int leftPosition = 160;
-    const int rightPosition = 360;
-    const int driveKnobWidth = 100;
-    const int secKnobWidth = 80;
-    driveKnob.setBounds(leftPosition+10, 20, driveKnobWidth, driveKnobWidth);
-    driveLabel.setBounds(driveKnob.getX() + 25 , driveKnob.getY() - 20, 90, 20);
-    driveMap.setBounds(leftPosition + 10, 20, driveKnobWidth/3, driveKnobWidth/3);
-    driveMap.setCentrePosition(driveKnob.getX() + driveKnobWidth / 2, driveKnob.getY()  -10 + driveKnobWidth / 2);
-    angerKnob.setBounds(driveKnob.getX() + 120, 30, secKnobWidth, secKnobWidth);
-    angerLabel.setBounds(angerKnob.getX()+10, angerKnob.getY() - 20, 90, 20);
-    angerMap.setBounds(driveKnob.getX() + 120, 30, secKnobWidth/4, secKnobWidth/4);
-    angerMap.setCentrePosition(angerKnob.getX() + secKnobWidth / 2, angerKnob.getY() - 10 + secKnobWidth / 2);
-    
-    HPFKnob.setBounds(leftPosition + 20, driveKnob.getBottom()+ 10, secKnobWidth, secKnobWidth);
-    HPFLabel.setBounds(HPFKnob.getX() + 20, HPFKnob.getY()-10, 90, 20);
-    distHPFMap.setBounds(leftPosition + 20, driveKnob.getBottom() + 10, secKnobWidth / 4, secKnobWidth / 4);
-    distHPFMap.setCentrePosition(HPFKnob.getX() + secKnobWidth / 2, HPFKnob.getY() - 10 + secKnobWidth / 2);
-    LPFKnob.setBounds(rightPosition - 70, driveKnob.getBottom() + 10, secKnobWidth, secKnobWidth);
-    LPFLabel.setBounds(rightPosition -45, LPFKnob.getY()-10, 90, 20);
-    distLPFMap.setBounds(rightPosition - 70, driveKnob.getBottom() + 10, secKnobWidth / 4, secKnobWidth / 4);
-    distLPFMap.setCentrePosition(LPFKnob.getX() + secKnobWidth / 2, LPFKnob.getY() - 10 + secKnobWidth / 2);
-    volumeKnob.setBounds(leftPosition + 20, HPFKnob.getBottom() + 20, secKnobWidth, secKnobWidth);
-    volumeLabel.setBounds(leftPosition + 30, volumeKnob.getY() - 10, 90, 20);
-    distVolumeMap.setBounds(leftPosition + 20, HPFKnob.getBottom() + 20, secKnobWidth / 4, secKnobWidth / 4);
-    distVolumeMap.setCentrePosition(volumeKnob.getX() + secKnobWidth / 2, volumeKnob.getY() - 10 + secKnobWidth / 2);
-    
-    
-    mixKnob.setBounds(rightPosition - 70, HPFKnob.getBottom() + 20, secKnobWidth, secKnobWidth);
-    mixLabel.setBounds(rightPosition -60, mixKnob.getY() -10, 90, 20);
-    distDryWetMap.setBounds(rightPosition - 70, HPFKnob.getBottom() + 20, secKnobWidth / 4, secKnobWidth / 4);
-    distDryWetMap.setCentrePosition(mixKnob.getX() + secKnobWidth / 2, mixKnob.getY() - 10 + secKnobWidth / 2);
 
+    const int knobWidth = 90;
+    const int buttonWidth = 30;
+
+    distortionPanelLabel.setBounds(265, 15, 250, 30);
+
+    driveKnob.setBounds(260 + 20, 80, knobWidth, knobWidth);
+    driveLabel.setBounds(260 + 55, 60, 90, 20);
+    driveMap.setBounds(260 + 25, 60, 30, 20);
+    //driveMap.setCentrePosition(driveKnob.getX() + driveKnobWidth / 2, driveKnob.getY()  -10 + driveKnobWidth / 2);
+
+    mixKnob.setBounds(260 + 20 + 120, 80, knobWidth, knobWidth);
+    mixLabel.setBounds(260 + 45 + 120, 60, 90, 20);
+    distDryWetMap.setBounds(260 + 15 + 120, 60, 30, 20);
+    //angerMap.setCentrePosition(angerKnob.getX() + secKnobWidth / 2, angerKnob.getY() - 10 + secKnobWidth / 2);
+
+
+    HPFKnob.setBounds(260 + 20, 80 + 140, knobWidth, 80);
+    HPFLabel.setBounds(260 + 65, 60 + 140, 90, 20);
+    distHPFMap.setBounds(260 + 35, 60 + 140, 30, 20);
+    //driveMap.setCentrePosition(driveKnob.getX() + driveKnobWidth / 2, driveKnob.getY()  -10 + driveKnobWidth / 2);
+
+    LPFKnob.setBounds(260 + 20 + 120, 80 + 140, knobWidth, 80);
+    LPFLabel.setBounds(260 + 60 + 120, 60 + 140, 90, 20);
+    distLPFMap.setBounds(260 + 30 + 120, 60 + 140, 30, 20);
+    //angerMap.setCentrePosition(angerKnob.getX() + secKnobWidth / 2, angerKnob.getY() - 10 + secKnobWidth / 2);
+
+
+    volumeKnob.setBounds(260 + 20, 80 + 140 + 130, knobWidth, 80);
+    volumeLabel.setBounds(260 + 50, 60 + 140 + 130, 90, 20);
+    distVolumeMap.setBounds(260 + 20, 60 + 140 + 130, 30, 20);
+    //driveMap.setCentrePosition(driveKnob.getX() + driveKnobWidth / 2, driveKnob.getY()  -10 + driveKnobWidth / 2);
+
+    angerKnob.setBounds(260 + 20 + 120, 80 + 140 + 130, knobWidth, 80);
+    angerLabel.setBounds(260 + 55 + 120, 60 + 140 + 130, 90, 20);
+    angerMap.setBounds(260 + 25 + 120, 60 + 140 + 130, 30, 20);
+    //angerMap.setCentrePosition(angerKnob.getX() + secKnobWidth / 2, angerKnob.getY() - 10 + secKnobWidth / 2);
+
+    
     for (int type = 0; type < distortionTypeButtons.size(); type++)
     {
-        distortionTypeButtons[type].setBounds(leftPosition + 25 + 50 * type, mixLabel.getBottom() + 80, secKnobWidth, secKnobWidth);
-        distortionTypesLabels[type].setBounds(leftPosition + 15 + 50 * type, distortionTypeButtons[type].getBottom() -10, 90, 20);
+        distortionTypeButtons[type].setBounds(25 + 50 * type + 10000, mixLabel.getBottom() + 80, 20, 20);
+        distortionTypesLabels[type].setBounds(15 + 50 * type + 10000, distortionTypeButtons[type].getBottom() -10, 90, 20);
     }
 }
 
 void EQAudioProcessorEditor::initialize_delay_parameters() {
+    delayPanelLabel.setJustificationType(12);
+    delayPanelLabel.setText("Delay", juce::dontSendNotification);
+    delayPanelLabel.setColour(juce::Label::ColourIds::textColourId, panelTitleColor);
+    addAndMakeVisible(delayPanelLabel);
+
     addAndMakeVisible(delayGain);
     addAndMakeVisible(delayTime);
     addAndMakeVisible(feedbackMap);
@@ -303,41 +348,82 @@ void EQAudioProcessorEditor::initialize_delay_parameters() {
         audioProcessor.delay_apvts, "delay_time", delayTime);
 
     delayGainLabel.setText("FEEDBACK", juce::NotificationType::dontSendNotification);
-    delayTimeLabel.setText("DELAY TIME", juce::NotificationType::dontSendNotification);
+    delayTimeLabel.setText("TIME", juce::NotificationType::dontSendNotification);
 
     delayGainLabel.setColour(juce::Label::ColourIds::textColourId, textColor);
     delayTimeLabel.setColour(juce::Label::ColourIds::textColourId, textColor);
 
+    delayGain.setColour(juce::Slider::ColourIds::rotarySliderFillColourId, knobBackgroundColor);
+    delayGain.setColour(juce::Slider::ColourIds::thumbColourId, knobThumbColor);
+    delayTime.setColour(juce::Slider::ColourIds::rotarySliderFillColourId, knobBackgroundColor);
+    delayTime.setColour(juce::Slider::ColourIds::thumbColourId, knobThumbColor);
 
 }
 
 void EQAudioProcessorEditor::resize_delay_parameters() {
-    int knobDim = 180;
-    delayGain.setBounds(390 + 20, 50, knobDim, knobDim);
-    delayGainLabel.setBounds(delayGain.getX() + knobDim / 2 - 20, delayGain.getY() - 20, 90,20);
-    feedbackMap.setBounds(390 + 20, 50, 80, 80);
-    feedbackMap.setCentrePosition(delayGain.getX() + knobDim / 2, delayGain.getY() - 10 + knobDim / 2);
-    delayTime.setBounds(390 + 20, 250, knobDim, knobDim);
-    delayTimeLabel.setBounds(delayTime.getX() + knobDim / 2 - 20, delayTime.getY() - 20, 90, 20);
-    delayTimeMap.setBounds(390 + 20, 250, 80, 80);
+    const int knobWidth = 90;
+    const int buttonWidth = 30;
 
-    delayTimeMap.setCentrePosition(delayTime.getX() + knobDim / 2, delayTime.getY() - 10 + knobDim / 2);
+    delayPanelLabel.setBounds(5, 265, 255, 30);
+
+    delayGain.setBounds(20, 80 + 260, knobWidth, knobWidth);
+    delayGainLabel.setBounds(50, 60 + 260, 90, 20);
+    feedbackMap.setBounds(20, 60 + 260, 30, 20);
+    //feedbackMap.setCentrePosition(delayGain.getX() + knobDim / 2, delayGain.getY() - 10 + knobDim / 2);
+
+    delayTime.setBounds(120 + 20, 80 + 260, knobWidth, knobWidth);
+    delayTimeLabel.setBounds(120 + 60, 60 + 260, 90, 20);
+    delayTimeMap.setBounds(120 + 30, 60 + 260, 30, 20);
+    //delayTimeMap.setCentrePosition(delayTime.getX() + knobDim / 2, delayTime.getY() - 10 + knobDim / 2);
+
+}
+
+void EQAudioProcessorEditor::initialize_out_parameters() {
+    outPanelLabel.setText("Out", juce::dontSendNotification);
+    outPanelLabel.setColour(juce::Label::ColourIds::textColourId, panelTitleColor);
+    outPanelLabel.setJustificationType(12);
+    addAndMakeVisible(outPanelLabel);
+
+    outVolumeSlider.setSliderStyle(juce::Slider::SliderStyle::LinearVertical);
+    outVolumeSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 100, 20);
+    outVolumeSlider.setColour(juce::Slider::ColourIds::textBoxTextColourId, textColor);
+    outVolumeSlider.setColour(juce::Slider::ColourIds::trackColourId, knobBackgroundColor);
+    outVolumeSlider.setColour(juce::Slider::ColourIds::thumbColourId, knobThumbColor);
+
+    outVolumeAttach = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
+        audioProcessor.out_apvts, "out_volume", outVolumeSlider);
+    addAndMakeVisible(outVolumeSlider);
+}
+void EQAudioProcessorEditor::resize_out_parameters() {
+    outPanelLabel.setBounds(520, 15, 115, 30);
+    outVolumeSlider.setBounds(540, 50, 80, 200);
 }
 
 void EQAudioProcessorEditor::initialize_mapping_buttons() {
-    param1Button.setButtonText("MAP X PARAMETER");
-    param2Button.setButtonText("MAP Y PARAMETER");
+    param1Button.setButtonText("MAP X");
+    param2Button.setButtonText("MAP Y");
+
+    mapPanelLabel.setText("Mapping", juce::dontSendNotification);
+    mapPanelLabel.setColour(juce::Label::ColourIds::textColourId, panelTitleColor);
+    mapPanelLabel.setJustificationType(12);
+
+    param1Button.setColour(juce::TextButton::ColourIds::buttonColourId, map1ColorDark);
+    param1Button.setColour(juce::TextButton::ColourIds::buttonOnColourId, map1ColorLight);
+    param2Button.setColour(juce::TextButton::ColourIds::buttonColourId, map2ColorDark);
+    param2Button.setColour(juce::TextButton::ColourIds::buttonOnColourId, map2ColorLight);
 
     param1Button.addListener(this);
     param2Button.addListener(this);
 
     addAndMakeVisible(param1Button);
     addAndMakeVisible(param2Button);
+    addAndMakeVisible(mapPanelLabel);
 }
 
 void EQAudioProcessorEditor::resize_mapping_buttons() {
-    param1Button.setBounds(100, 450 + 10, 150, 30);
-    param2Button.setBounds(300, 450 + 10, 150, 30);
+    mapPanelLabel.setBounds(520, 310, 115, 30);
+    param1Button.setBounds(520 + 20, 360, 80, 30);
+    param2Button.setBounds(520 + 20, 400, 80, 30);
 }
 
 void EQAudioProcessorEditor::filterButtonClicked(int index)
@@ -364,10 +450,14 @@ void EQAudioProcessorEditor::buttonClicked(juce::Button* button) {
     }*/
     if (button == &param1Button) {
         button->setToggleState(true, juce::NotificationType::dontSendNotification);
+        param2Button.setToggleState(false, juce::NotificationType::dontSendNotification);
         mapParameter1 = true;
+        mapParameter2 = false;
     }
     if (button == &param2Button) {
         button->setToggleState(true, juce::NotificationType::dontSendNotification);
+        param1Button.setToggleState(false, juce::NotificationType::dontSendNotification);
+        mapParameter1 = false;
         mapParameter2 = true;
     }
     /*if (button == &filterCutoffMap) {
@@ -381,6 +471,7 @@ void EQAudioProcessorEditor::buttonClicked(juce::Button* button) {
 }
 
 void EQAudioProcessorEditor::initialize_mapping_button(MapButton& b) {
+    b.addListener(this);
     b.setAlpha(50);
     b.onClick = [&]() { mapButtonClicked(&b); };
 }
@@ -388,26 +479,48 @@ void EQAudioProcessorEditor::initialize_mapping_button(MapButton& b) {
 void EQAudioProcessorEditor::mapButtonClicked(MapButton* b) {
     if (mapParameter1) {
         if (mapButton1 != b && mapButton1 != nullptr && mapButton1 != mapButton2) {
-            mapButton1->setColour(juce::TextButton::ColourIds::buttonColourId, juce::Colours::darkgrey);
+            mapButton1->setColour(juce::TextButton::ColourIds::buttonColourId, mapNullColor);
+            if (param1 != nullptr) {
+                param1->setColour(juce::Slider::ColourIds::rotarySliderFillColourId, knobBackgroundColor);
+                param1->setColour(juce::Slider::ColourIds::thumbColourId, knobThumbColor);
+            }
         }
         mapButton1 = b;
-        b->setColour(juce::TextButton::ColourIds::buttonColourId, juce::Colours::red);
+        b->setColour(juce::TextButton::ColourIds::buttonColourId, map1ColorLight);
         param1 = b->attachedSlider;
+        param1->setColour(juce::Slider::ColourIds::rotarySliderFillColourId, map1ColorDark);
+        param1->setColour(juce::Slider::ColourIds::thumbColourId, map1ColorLight);
+
         param1Button.setToggleState(false, juce::NotificationType::dontSendNotification);
         mapParameter1 = false;
-        /*if (mapButton1 == mapButton2) {
-            mapButton2->setColour(juce::TextButton::ColourIds::buttonColourId, juce::Colours::darkgrey);
-        }*/
     }
-    if (mapParameter2) {
+    else if (mapParameter2) {
         if (mapButton2 != b && mapButton2 != nullptr && mapButton1 != mapButton2) {
-            mapButton2->setColour(juce::TextButton::ColourIds::buttonColourId, juce::Colours::darkgrey);
+            mapButton2->setColour(juce::TextButton::ColourIds::buttonColourId, mapNullColor);
+            if (param2 != nullptr) {
+                param2->setColour(juce::Slider::ColourIds::rotarySliderFillColourId, knobBackgroundColor);
+                param2->setColour(juce::Slider::ColourIds::thumbColourId, knobThumbColor);
+            }
         }
         mapButton2 = b;
-        b->setColour(juce::TextButton::ColourIds::buttonColourId, juce::Colours::yellow);
+        b->setColour(juce::TextButton::ColourIds::buttonColourId, map2ColorLight);
         param2 = b->attachedSlider;
+        param2->setColour(juce::Slider::ColourIds::rotarySliderFillColourId, map2ColorDark);
+        param2->setColour(juce::Slider::ColourIds::thumbColourId, map2ColorLight);
+
         param2Button.setToggleState(false, juce::NotificationType::dontSendNotification);
         mapParameter2 = false;
+    }
+    else {
+        b->setColour(juce::TextButton::ColourIds::buttonColourId, mapNullColor);
+        b->attachedSlider->setColour(juce::Slider::ColourIds::rotarySliderFillColourId, knobBackgroundColor);
+        b->attachedSlider->setColour(juce::Slider::ColourIds::thumbColourId, knobThumbColor);
+        if (b == mapButton1) {
+            param1 = nullptr;
+        }
+        else {
+            param2 = nullptr;
+        }
     }
 }
 

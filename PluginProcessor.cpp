@@ -25,7 +25,7 @@ EQAudioProcessor::EQAudioProcessor()
                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
                      #endif
                        ),
-                       equalizer_apvts(*this, nullptr), distortion_apvts(*this, nullptr), delay_apvts(*this, nullptr)
+                       equalizer_apvts(*this, nullptr), distortion_apvts(*this, nullptr), delay_apvts(*this, nullptr), out_apvts(*this, nullptr)
 #endif
 {
     
@@ -38,7 +38,6 @@ EQAudioProcessor::EQAudioProcessor()
         "Q", juce::NormalisableRange<float>(0.01f, 10.0f, 0.01f), 5.0f));
     equalizer_apvts.createAndAddParameter(std::make_unique<juce::AudioParameterChoice>("type",
         "Filter Type", filterTypes, 0));
-
     equalizer_apvts.state = juce::ValueTree("savedParams");
 
     //Distortion parameters
@@ -64,6 +63,11 @@ EQAudioProcessor::EQAudioProcessor()
     delay_apvts.createAndAddParameter(std::make_unique<juce::AudioParameterFloat>("delay_time",
         "delayTime", juce::NormalisableRange<float>(0, 2000, 50), 500));
     delay_apvts.state = juce::ValueTree("savedParams");
+
+    //Out parameters
+    out_apvts.createAndAddParameter(std::make_unique<juce::AudioParameterFloat>("out_volume",
+        "Out Volume", juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f), 0.0f));
+    out_apvts.state = juce::ValueTree("savedParams");
 }
 
 EQAudioProcessor::~EQAudioProcessor()
