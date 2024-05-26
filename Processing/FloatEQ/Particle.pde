@@ -4,7 +4,7 @@ class Particle {
   PVector force = new PVector();
   float lifespan;
   float currentLife = 0;
-  float size = random(3);
+  float size = random(2);
   
   Particle (float xCoord, float yCoord, float lifespanTime) {  
     pos.x = xCoord;
