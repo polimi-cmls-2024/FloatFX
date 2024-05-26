@@ -57,7 +57,7 @@ const uint8_t PINS[3] = { X_PIN, Y_PIN, Z_PIN };  // pins array
 uint16_t axisVett[3];                             // axis values
 
 uint16_t old_state, new_state, finger_state;
-int16_t value;  // relative value to set, from 0 to 100
+int16_t value_x=0, value_y=0;  // relative value to set, from 0 to 100
 
 float value_map[MAP_SIZE][2] = {
   // mapping the delta w.r.t the resting position to the output percentage
@@ -66,8 +66,8 @@ float value_map[MAP_SIZE][2] = {
 
 
 
-uint8_t knobX = 0, knobY = 0;  // which knob is active
-
+uint8_t knobX = 1, knobY = 1;  // which knob is active
+int16_t fixed_value_x=0, fixed_value_y=0;
 
 void setup() {
 
@@ -79,7 +79,7 @@ void setup() {
   old_state = Z_UP;
   new_state = Z_UP;
   finger_state = OPEN;
-  value = 0;
+  
   float maxDelta = 240;
   float minDelta = 50;
   float increment = (maxDelta - minDelta) / 100;
@@ -95,17 +95,16 @@ void setup() {
 
 void loop() {
 
-  Serial.print("X = ");
+  /*Serial.print("X = ");
   Serial.print(analogRead(PINS[0]));
   Serial.print("Y = ");
   Serial.print(analogRead(PINS[1]));
   Serial.print("Z = ");
-  Serial.println(analogRead(PINS[2]));
+  Serial.println(analogRead(PINS[2]));*/
 
   readAxis(WINDOW_SAMPLES);
 
   detectRotation();
-  detectClamp();
 
   sendMessage();
 }
@@ -143,31 +142,37 @@ void sendMessage() {
 
   switch (new_state) {
     case X_UP:
-      Serial.print("G+");
+      if(knobX){
+        Serial.print("G+");
+        Serial.println(value_x);
+      }
       break;
     case X_DOWN:
-      Serial.print("G-");
+      if(knobX){
+        Serial.print("G-");
+        Serial.println(value_x);
+      }
+
       break;
     case Y_UP:
-      Serial.print("B+");
+      
+      if(knobY){
+        Serial.print("B+");
+        Serial.println(value_y);
+      } 
       break;
     case Y_DOWN:
-      Serial.print("B-");
+      
+      if(knobY){
+        Serial.print("B-");
+        Serial.println(value_y);
+      } 
       break;
   }
-  Serial.println(value);
+  
 
   //}
   old_state = new_state;
-}
-
-void detectClamp() {
-  if (digitalRead(FINGER_PIN) == 0) {
-    finger_state = CLOSED;
-  } else {
-    finger_state = OPEN;
-  }
-  return;
 }
 
 
@@ -184,7 +189,8 @@ void detectRotation() {
   uint8_t deltaY_sign = (deltaY > 0);
 
   uint8_t pinch = !digitalRead(FINGER_PIN);
-
+  if(pinch)
+    delay(200);
 
   new_state = Z_UP;
 
@@ -215,18 +221,28 @@ void detectRotation() {
     if (pinch) {
       knobX = !knobX;
     }
+    if (knobX) {
+    value_x = readMap(deltaX);
+    } else{
+      fixed_value_x= value_x;
+    }
   } else if (new_state == Y_UP || new_state == Y_DOWN) {
     if (pinch) {
       knobY = !knobY;
     }
+    if (knobY) {
+    value_y = readMap(deltaY);
+    } else{
+      fixed_value_y= value_y;
+    }
   }
 
 
-  if (knobX) {
+  /*if (knobX) {
     value = readMap(deltaX);
   } else if (knobY) {
     value = readMap(deltaY);
-  }
+  }*/
 
 
 }
