@@ -4,7 +4,7 @@ float minDb = -120;
 
 // Visualization
 int fftOrder = 11;
-float bassCorrection = 0.6;
+float correctionFactor = 0.6;
 float smoothUp = 0.02; // [0,1]
 float smoothDown = 0.05; // [0,1]
 float particleLifespan = 0.3; // [seconds]
