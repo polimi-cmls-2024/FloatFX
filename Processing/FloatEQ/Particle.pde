@@ -26,7 +26,7 @@ class Particle {
   void draw() {
     if(currentLife > lifespan) return;
     
-    fill(255, 255, 255, 255*(lifespan - currentLife) / lifespan);
+    fill(particleColor, 255*(lifespan - currentLife) / lifespan);
     noStroke();
     ellipse(pos.x, pos.y, size, size);
   }

@@ -10,7 +10,9 @@ float particleLifespan = 0.3; // [seconds]
 float particleGravity = 2; // [seconds]
 float nParticlesPerPx = 1;
 float padding = 0.3; // [0,1)
-color backgroundColor = 20;
+color backgroundColor = color(20,20,20);
+color particleColor = color(255,255,255);
+color barColor = color(90,67,120);
 
 // OSC
 String ip = "127.0.0.1";

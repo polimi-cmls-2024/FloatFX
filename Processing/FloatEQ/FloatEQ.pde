@@ -60,7 +60,7 @@ void drawBars(){
     int barWidth = Math.round(barXRight - barXLeft);
     
     // Draw bar
-    fill(255);
+    fill(barColor);
     rect(
       nw.x + barXLeft,
       nw.y + size.y - barHeight, 
