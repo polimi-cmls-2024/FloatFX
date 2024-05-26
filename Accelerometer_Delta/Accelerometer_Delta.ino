@@ -23,14 +23,14 @@
 
 
 // HARDWARE DEFINITIONS
-#define X_PIN       A5
-#define Y_PIN       A4
-#define Z_PIN       A3
-#define FINGER_PIN  A6
+#define X_PIN A5
+#define Y_PIN A4
+#define Z_PIN A3
+#define FINGER_PIN A6
 
 
 // SOFTWARE DEFINITIONS
-#define WINDOW_SAMPLES 20
+#define WINDOW_SAMPLES 10
 #define SETTLE_TIME 3000  //Time in ms for the calibration
 
 #define X_UP 0x10    //--> 2.45V
@@ -39,7 +39,7 @@
 #define Y_DOWN 0x21
 #define Z_UP 0x30
 #define Z_DOWN 0x31
-#define OPEN 0x40   // finger
+#define OPEN 0x40  // finger
 #define CLOSED 0x41
 
 #define X_THRES 80
@@ -52,23 +52,22 @@ uint16_t xRest = 338;
 uint16_t yRest = 338;
 uint16_t zRest = 500;
 
-const uint8_t PINS[3] = { X_PIN, Y_PIN, Z_PIN };    // pins array
-uint16_t axisVett[3];                               // axis values
+const uint8_t PINS[3] = { X_PIN, Y_PIN, Z_PIN };  // pins array
+uint16_t axisVett[3];                             // axis values
 
 uint16_t old_state, new_state, finger_state;
-int16_t value;                                      // relative value to set, from 0 to 100
+int16_t value;  // relative value to set, from 0 to 100
 
-const int16_t value_map[MAP_SIZE][2] = {  {80, 10},       // mapping the delta w.r.t the resting position to the output percentage
-                                          {90, 20},
-                                          {100, 30},
-                                          {120, 40},
-                                          {140, 50},
-                                          {160, 60},
-                                          {180, 70},
-                                          {200, 80},
-                                          {220, 90},
-                                          {240, 100}
-                                       };
+const int16_t value_map[MAP_SIZE][2] = { { 80, 10 },  // mapping the delta w.r.t the resting position to the output percentage
+                                         { 90, 20 },
+                                         { 100, 30 },
+                                         { 120, 40 },
+                                         { 140, 50 },
+                                         { 160, 60 },
+                                         { 180, 70 },
+                                         { 200, 80 },
+                                         { 220, 90 },
+                                         { 240, 100 } };
 
 void setup() {
 
@@ -80,7 +79,6 @@ void setup() {
   value = 0;
 
   pinMode(FINGER_PIN, INPUT_PULLUP);
-
 }
 
 void loop() {
@@ -91,33 +89,37 @@ void loop() {
   detectClamp();
 
   sendMessage();
-
 }
 
 int16_t readMap(int16_t delta) {
 
   uint8_t min_index = 0, max_index = 0;
   uint16_t val = 0;
+  uint8_t found = 0;
 
   delta = abs(delta);
 
   for (int i = 0; i < (MAP_SIZE - 1); i++) {
-    if ((value_map[i][0] < delta)  &&  (value_map[i+1][0] > delta)) {
+    if ((value_map[i][0] < delta) && (value_map[i + 1][0] > delta)) {
       min_index = i;
-      max_index = i+1;
+      max_index = i + 1;
+      found = 1;
       break;
     }
   }
-  if ((value_map[MAP_SIZE-1][0] < delta)) {
-    min_index = MAP_SIZE - 1;
-    max_index = min_index;
-  }  
 
-  val = 0.5 * (value_map[min_index][1] + value_map[min_index][1]);
+
+  if (!found) {
+    if ((value_map[MAP_SIZE - 1][0] < delta)) {
+      min_index = MAP_SIZE - 1;
+      max_index = min_index;
+    }
+  }
+
+  val = 0.5 * (value_map[min_index][1] + value_map[max_index][1]);
 
 
   return val;
-
 }
 
 
@@ -125,17 +127,20 @@ void sendMessage() {
   //if (old_state == Z_UP && new_state != Z_UP) {          // only act upon movements from the calibration position
 
   if (finger_state == CLOSED) {
-
-    if (new_state == X_UP) {            // X fingertips, Y palm
-      Serial.print("G+");
-    } else if (new_state == X_DOWN) {
-      Serial.print("G-");
-    } else if (new_state == Y_UP) {
-      Serial.print("B+");
-    } else if (new_state == Y_DOWN) {
-      Serial.print("B-");
+    switch (new_state) {
+      case X_UP:
+        Serial.print("G+");
+        break;
+      case X_DOWN:
+        Serial.print("G-");
+        break;
+      case Y_UP:
+        Serial.print("B+");
+        break;
+      case Y_DOWN:
+        Serial.print("B-");
+        break;
     }
-
     Serial.println(value);
   }
 
@@ -155,27 +160,31 @@ void detectClamp() {
 
 void detectRotation() {
 
-  int deltaX, deltaY, deltaZ;
+  int16_t deltaX = axisVett[0] - xRest;
+  int16_t deltaY = axisVett[1] - yRest;
+  int16_t deltaZ = axisVett[2] - zRest;
 
-  deltaX = axisVett[0] - xRest;
-  deltaY = axisVett[1] - yRest;
-  deltaZ = axisVett[2] - zRest;
+  int16_t deltaX_abs = abs(deltaX);
+  int16_t deltaY_abs = abs(deltaY);
+
+  uint8_t deltaX_sign = (deltaX > 0);
+  uint8_t deltaY_sign = (deltaY > 0);
 
 
   new_state = Z_UP;
 
-  if (abs(deltaX) > abs(deltaY)) {  // distinguish X & Y rotations
-    if (abs(deltaX) > X_THRES) {    // verify threshold is respected
-      if (deltaX > 0) {
+  if (deltaX_abs > deltaY_abs) {  // distinguish X & Y rotations
+    if (deltaX_abs > X_THRES) {   // verify threshold is respected
+      if (deltaX_sign) {
         new_state = X_UP;
       } else {
         new_state = X_DOWN;
       }
-      value = readMap(deltaX);      // compute the target value to set
+      value = readMap(deltaX);  // compute the target value to set
     }
-  } else if (abs(deltaY) > abs(deltaX)) {
-    if (abs(deltaY) > Y_THRES) {
-      if (deltaY > 0) {
+  } else if (deltaY_abs > deltaX_abs) {
+    if (deltaY_abs > Y_THRES) {
+      if (deltaY_sign) {
         new_state = Y_UP;
       } else {
         new_state = Y_DOWN;
@@ -207,7 +216,6 @@ void readAxis(uint16_t samples) {
 
   return;
 }
-
 
 void calibrateAccelerometer() {
 
