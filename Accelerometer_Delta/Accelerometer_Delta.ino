@@ -20,7 +20,8 @@
       Inclination mapped to the output value
  **************************************************************/
 
-
+#include <iostream>
+#include <fstream>
 
 // HARDWARE DEFINITIONS
 #define X_PIN A5
@@ -42,10 +43,10 @@
 #define OPEN 0x40  // finger
 #define CLOSED 0x41
 
-#define X_THRES 80
-#define Y_THRES 80
-#define Z_THRES 80
-#define MAP_SIZE 10
+#define X_THRES 50
+#define Y_THRES 50
+#define Z_THRES 50
+#define MAP_SIZE 100
 
 // Accelerometer values at rest from datasheet, to be overwritten by the calibration routine
 uint16_t xRest = 338;
@@ -58,16 +59,9 @@ uint16_t axisVett[3];                             // axis values
 uint16_t old_state, new_state, finger_state;
 int16_t value;  // relative value to set, from 0 to 100
 
-const int16_t value_map[MAP_SIZE][2] = { { 80, 10 },  // mapping the delta w.r.t the resting position to the output percentage
-                                         { 90, 20 },
-                                         { 100, 30 },
-                                         { 120, 40 },
-                                         { 140, 50 },
-                                         { 160, 60 },
-                                         { 180, 70 },
-                                         { 200, 80 },
-                                         { 220, 90 },
-                                         { 240, 100 } };
+float value_map[MAP_SIZE][2] = {         // mapping the delta w.r.t the resting position to the output percentage
+                                          
+                                       };
 
 void setup() {
 
@@ -77,11 +71,29 @@ void setup() {
   new_state = Z_UP;
   finger_state = OPEN;
   value = 0;
+  Serial.print("DIO BOIA");
+  float maxDelta = 240;
+  float minDelta = 50;
+  float increment = (maxDelta - minDelta)/100;
+  for (int i = 0; i < MAP_SIZE; i++){
+    value_map[i][0]= minDelta + i*increment;
+    value_map[i][1]=i;
+    Serial.print(value_map[i][0]);
+    Serial.print(", ");
+    Serial.println(value_map[i][1]);
 
+  }
   pinMode(FINGER_PIN, INPUT_PULLUP);
 }
 
 void loop() {
+
+  Serial.print("X = ");
+  Serial.print(analogRead(PINS[0]));
+  Serial.print("Y = ");
+  Serial.print(analogRead(PINS[1]));
+  Serial.print("Z = ");
+  Serial.println(analogRead(PINS[2]));
 
   readAxis(WINDOW_SAMPLES);
 
@@ -94,8 +106,7 @@ void loop() {
 int16_t readMap(int16_t delta) {
 
   uint8_t min_index = 0, max_index = 0;
-  uint16_t val = 0;
-  uint8_t found = 0;
+  static uint16_t val = 0;
 
   delta = abs(delta);
 
@@ -103,20 +114,18 @@ int16_t readMap(int16_t delta) {
     if ((value_map[i][0] < delta) && (value_map[i + 1][0] > delta)) {
       min_index = i;
       max_index = i + 1;
-      found = 1;
-      break;
+      val = 0.5 * (value_map[min_index][1] + value_map[max_index][1]);
+      return val;
     }
+
+
   }
 
-
-  if (!found) {
-    if ((value_map[MAP_SIZE - 1][0] < delta)) {
-      min_index = MAP_SIZE - 1;
-      max_index = min_index;
-    }
+  if ((value_map[MAP_SIZE - 1][0] < delta)) {
+    val = value_map[MAP_SIZE - 1][1];
   }
+    
 
-  val = 0.5 * (value_map[min_index][1] + value_map[max_index][1]);
 
 
   return val;
@@ -126,7 +135,7 @@ int16_t readMap(int16_t delta) {
 void sendMessage() {
   //if (old_state == Z_UP && new_state != Z_UP) {          // only act upon movements from the calibration position
 
-  if (finger_state == CLOSED) {
+  
     switch (new_state) {
       case X_UP:
         Serial.print("G+");
@@ -140,9 +149,9 @@ void sendMessage() {
       case Y_DOWN:
         Serial.print("B-");
         break;
-    }
-    Serial.println(value);
+    
   }
+  Serial.println(value);
 
   //}
   old_state = new_state;
