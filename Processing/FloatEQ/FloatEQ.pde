@@ -2,7 +2,7 @@ void setup() {
   
   // Initialize general parameters
   frameRate(framerate);
-  size(1100, 500);
+  size(1280, 720);
   //fullScreen();
   
   // Initialize OSC
@@ -19,10 +19,12 @@ void setup() {
   currentValues = new ArrayList<Float>(); // [0,1]
   smoothValues = new ArrayList<Float>(); // [0,1]
   prevValues = new ArrayList<Float>(); // [0,1]
-  for (int i = 0; i < nBeans; i++) {
+  xValues = new ArrayList<Integer>();
+  for (int i = 0; i < nBeans+1; i++) {
     currentValues.add(0.);
     smoothValues.add(0.);
     prevValues.add(0.);
+    xValues.add(calculateX(i));
   }
 }
 
@@ -54,7 +56,7 @@ void drawBars(){
   for (int i = 0; i < nBeans; i++) {
     
     // Calculate bar coordinates
-    int barHeight = calculateBarHeight(smoothValues.get(i));
+    int barHeight = calculateBarHeight(smoothValues.get(i), i);
     int barXLeft = calculateX(i);
     int barXRight = calculateX(i+1);
     int barWidth = Math.round(barXRight - barXLeft);

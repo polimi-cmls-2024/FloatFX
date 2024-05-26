@@ -5,4 +5,5 @@ int nBeans = (int)Math.pow(2, fftOrder-1);
 ArrayList<Float> currentValues; // [0,1]
 ArrayList<Float> smoothValues; // [0,1]
 ArrayList<Float> prevValues; // [0,1]
+ArrayList<Integer> xValues;
 ArrayList<ParticleSystem> particleSystems = new ArrayList<ParticleSystem>();

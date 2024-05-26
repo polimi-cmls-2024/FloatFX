@@ -9,7 +9,8 @@ NetAddress myRemoteLocation;
 void oscEvent(OscMessage message) {
   if(message.addrPattern().equals("/spectrum")){
     for (int i = 0; i < nBeans; i++) {
-      currentValues.set(i, clamp(message.get(i).floatValue() / 50, 0f, 1f));
+      float value = clamp(message.get(i).floatValue() * 0.01, 0f, 1f);
+      currentValues.set(i, value);
     }
   }
 }

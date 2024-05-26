@@ -13,12 +13,17 @@ public float getSmoothValue(float prev, float current){
   }
 }
 
-public int calculateBarHeight(float value){
+public int calculateBarHeight(float value, int i){
+  
     double valueLog = 20 * Math.log10(value);
     valueLog = Math.max(minDb, valueLog);
     valueLog = (valueLog - minDb) / (-minDb);
     int barHeight = (int)Math.round(valueLog * size.y);
-    return barHeight;
+    
+    double correction = ((float)xValues.get(i) / size.x) * 2 - 1;
+    correction = correction * bassCorrection * size.y * 0.3;
+    
+    return barHeight + (int)correction;
 }
 
 public int calculateX(int beanIndex){

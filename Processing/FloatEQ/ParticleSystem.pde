@@ -56,9 +56,9 @@ void updateParticleSystems(){
   // Add new systems
   for (int i = 0; i < nBeans; i++) {
     
-    int barHeight = calculateBarHeight(smoothValues.get(i));
-    int barXLeft = calculateX(i);
-    int barXRight = calculateX(i+1);
+    int barHeight = calculateBarHeight(smoothValues.get(i), i);
+    int barXLeft = xValues.get(i);
+    int barXRight = xValues.get(i+1);
     int barWidth = Math.round(barXRight - barXLeft);
     
     particleSystems.add(
