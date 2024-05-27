@@ -13,8 +13,7 @@ and the console area, and plus, it also makes for a cool trick for the audience.
 been designed to avoid accidental parameter changes while playing the instrument
 and works only with finger pinches. 
 
-The processing of the effects and GUI have been implemented on ’JUCE’ and ’Pro-
-cessing’, using ’Arduino’ and an accelerometer attached to the hand to capture the
+The processing of the effects and GUI have been implemented on ’JUCE’ and ’Processing’, using ’Arduino’ and an accelerometer attached to the hand to capture the
 movements. To demonstrate the viability of this product in a live music scene, we
 have made a live SuperCollider music performance, without the usage of any exter-
 nal audio files. The tools, approaches and the implementation have been discussed
