@@ -18,6 +18,9 @@ movements. To demonstrate the viability of this product in a live music scene, w
 have made a live SuperCollider music performance, without the usage of any exter-
 nal audio files. The tools, approaches and the implementation have been discussed
 in detail in the following section.
+
+![](https://github.com/polimi-cmls-2024/FloatFX/blob/main/floatfx.JPG)
+
 ### List of modules to compile and build the plugin:
 
 ![](https://github.com/polimi-cmls-2024/FloatFX/blob/main/modules.JPG)
