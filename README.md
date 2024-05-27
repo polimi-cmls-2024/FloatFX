@@ -6,7 +6,7 @@ Team name: fast furries transform
 Singers, coding musicians, instrumentalists, sound technicians over the world face
 major challenges when having to control the tone of their sound/instruments in
 realtime. FloatFX adds an exciting flavour to live performances by enabling musi-
-cians/technicians to control various fx parameters like filters, distortion etc, with
+cians/technicians to control various fx parameters of filters, distortion and delay with
 just simple motions of the hand. This would save them from the trouble of looking
 for knobs on their pedals in the dark, having to communicate between the stage
 and the console area, and plus, it also makes for a cool trick for the audience. It has
