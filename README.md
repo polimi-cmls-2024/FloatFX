@@ -1,4 +1,4 @@
-Authors: Alberto Colucci, Davide Rizzotti, Guido Eli, Madhav Gopi 
+Authors: Alberto Colucci, Davide Rizzotti, Guido Elli, Madhav Gopi 
 
 Team name: fast furries transform
 
