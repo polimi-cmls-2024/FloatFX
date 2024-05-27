@@ -2,6 +2,7 @@
 
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include <math.h>
 
 //==============================================================================
 EQAudioProcessorEditor::EQAudioProcessorEditor (EQAudioProcessor& p)
@@ -522,6 +523,10 @@ void EQAudioProcessorEditor::mapButtonClicked(MapButton* b) {
     }
 }
 
+float logScale(float value) {
+    return log(1.0 + value * 20.0) / log(21.0);
+}
+
 void EQAudioProcessorEditor::timerCallback() {
     int messages_to_pop = 50;
     float mean_value = 0;
@@ -540,9 +545,10 @@ void EQAudioProcessorEditor::timerCallback() {
             DBG("VALUE");
             DBG(m.value);
             if (m.verse == MINUS_SIGN)
-                m.value = -m.value;
-            mean_value += (float)m.value;
-            
+                mean_value -= (float)m.value;
+            else {
+                mean_value += (float)m.value;
+            }
         }
         mean_value = mean_value / (float)i;
 
@@ -550,20 +556,35 @@ void EQAudioProcessorEditor::timerCallback() {
             float max = param1->getMaximum();
             float min = param1->getMinimum();
             float middle = (max + min) / 2;
-            if (mean_value >= -5 && mean_value <= 5)
-                param1->setValue(middle);
-            else
-                param1->setValue( middle + (max-middle) * (float(mean_value) / 100.0));
+
+            if (param1 == &filterCutoff || param1 == &HPFKnob || param1 == &LPFKnob) {
+                if (m.verse == MINUS_SIGN) {
+                    param1->setValue(middle + (max - middle) * (-logScale(float(abs(mean_value)) / 100.0)));
+                }
+                else {
+                    param1->setValue(middle + (max - middle) * (float(mean_value) / 100.0));
+                }
+            }
+            else {
+                param1->setValue(middle + (max - middle) * (float(mean_value) / 100.0));
+            }
         }
         if (param2 != nullptr && m.direction == Y_AXIS) {
             float max = param2->getMaximum();
             float min = param2->getMinimum();
             float middle = (max + min) / 2;
-            if (mean_value >= -5 && mean_value <= 5)
-                param2->setValue(middle);
-            else
-                param2->setValue(middle + (max - middle) * (float(mean_value) / 100.0));
             
+            if (param2 == &filterCutoff || param2 == &HPFKnob || param2 == &LPFKnob) {
+                if (m.verse == MINUS_SIGN) {
+                    param2->setValue(middle + (max - middle) * (-logScale(float(abs(mean_value)) / 100.0)));
+                }
+                else {
+                    param2->setValue(middle + (max - middle) * (float(mean_value) / 100.0));
+                }
+            }
+            else {
+                param2->setValue(middle + (max - middle) * (float(mean_value) / 100.0));
+            }
         }
     }
 }

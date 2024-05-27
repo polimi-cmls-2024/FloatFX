@@ -26,9 +26,9 @@ EQAudioProcessor::EQAudioProcessor()
 
     //Equalizer parameters
     equalizer_apvts.createAndAddParameter(std::make_unique<juce::AudioParameterFloat>("EQcutoff",
-        "EQ Cutoff", juce::NormalisableRange<float>(20.0f, 20000.0f, 1.0f, 0.25f), 10000.0f));
+        "EQ Cutoff", juce::NormalisableRange<float>(20.0f, 20000.0f, 1.0f, 0.35f), 10000.0f));
     equalizer_apvts.createAndAddParameter(std::make_unique<juce::AudioParameterFloat>("Q",
-        "Q", juce::NormalisableRange<float>(0.01f, 10.0f, 0.01f), 5.0f));
+        "Q", juce::NormalisableRange<float>(0.01f, 10.0f, 0.01f), 2.0f));
     equalizer_apvts.createAndAddParameter(std::make_unique<juce::AudioParameterChoice>("type",
         "Filter Type", filterTypes, 0));
     equalizer_apvts.state = juce::ValueTree("savedParams");
@@ -45,7 +45,7 @@ EQAudioProcessor::EQAudioProcessor()
     distortion_apvts.createAndAddParameter(std::make_unique<juce::AudioParameterFloat>("hpf",
         "HPF Frequency", juce::NormalisableRange<float>(20.0f, 20000.0f, 1.0f, 0.25f), 20.0f, "Hz"));
     distortion_apvts.createAndAddParameter(std::make_unique<juce::AudioParameterFloat>("lpf",
-        "LPF Frequency", juce::NormalisableRange<float>(200.0f, 20000.0f, 1.0f, 0.25f), 20000.0f, "Hz"));
+        "LPF Frequency", juce::NormalisableRange<float>(20.0f, 20000.0f, 1.0f, 0.25f), 20000.0f, "Hz"));
     distortion_apvts.createAndAddParameter(std::make_unique<juce::AudioParameterChoice>("distortion_type",
         "Distortion Type", distortionTypes, 0));
     distortion_apvts.state = juce::ValueTree("savedParams");

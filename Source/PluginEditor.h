@@ -138,7 +138,7 @@ private:
 
 
     //To modify the sliders from incoming data. It is called once every "timerValue" milliseconds.
-    int timerValue = 50;
+    int timerValue = 25;
     void timerCallback() override;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (EQAudioProcessorEditor)
