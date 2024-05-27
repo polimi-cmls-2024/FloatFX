@@ -1,8 +1,6 @@
 /* Live SuperCollider Performance
 
-FloatFX2
-
-Author: Madhav
+FloatFX
 
 */
 
