@@ -3,7 +3,7 @@ int framerate = 75;
 float minDb = -120;
 
 // Visualization
-int fftOrder = 11;
+int fftOrder = 10;
 float correctionFactor = 0.6;
 float smoothUp = 0.02; // [0,1]
 float smoothDown = 0.05; // [0,1]
